@@ -40,4 +40,6 @@ export interface Product {
   categoryId: string | any;
   modifierGroups: string[] | any[];
   badge?: "Popular" | "Best Seller" | "New" | null;
+  productId?: string;
+  isActive?: boolean;
 }
