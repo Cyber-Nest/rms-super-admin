@@ -40,6 +40,7 @@ export default function ProductsTab({
     categoryId: "",
     modifierGroups: [],
     badge: null,
+    isActive: true,
   });
 
   // Sync default category
@@ -123,6 +124,7 @@ export default function ProductsTab({
         typeof g === "object" ? g.id || g._id : g,
       ),
       badge: prod.badge || null,
+      isActive: prod.isActive !== false,
     });
   };
 
@@ -137,6 +139,7 @@ export default function ProductsTab({
       categoryId: categories[0]?.id || categories[0]?._id || "",
       modifierGroups: [],
       badge: null,
+      isActive: true,
     });
   };
 
@@ -178,6 +181,7 @@ export default function ProductsTab({
             categoryId: categories[0]?.id || categories[0]?._id || "",
             modifierGroups: [],
             badge: null,
+            isActive: true,
           });
           fetchProducts();
         }
@@ -416,6 +420,28 @@ export default function ProductsTab({
               </div>
             </div>
 
+            <div className="flex items-center justify-between p-3 bg-[#FAFAF9] border border-neutral-200 rounded-xl">
+              <div>
+                <span className="block text-[10px] font-800 text-neutral-700 uppercase tracking-wider">Active Status</span>
+                <span className="block text-[8px] text-neutral-400 leading-normal">
+                  Toggle whether this product is visible on the menu and POS.
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setProdForm({ ...prodForm, isActive: prodForm.isActive !== false ? false : true })}
+                className={`relative inline-flex h-5 w-10 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+                  prodForm.isActive !== false ? 'bg-[#16A34A]' : 'bg-neutral-300'
+                }`}
+              >
+                <span
+                  className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
+                    prodForm.isActive !== false ? 'translate-x-[20px]' : 'translate-x-0'
+                  }`}
+                />
+              </button>
+            </div>
+
             {prodForm.itemType === "combo" && (
               <div className="space-y-2.5 pt-2 border-t border-neutral-100">
                 <label className="block text-[9px] font-700 text-neutral-400 uppercase tracking-wider">
@@ -565,6 +591,20 @@ export default function ProductsTab({
                           {prod.badge}
                         </span>
                       )}
+                      {prod.productId && (
+                        <span className="bg-neutral-800 text-white text-[7.5px] font-700 px-1 py-0.2 rounded uppercase">
+                          {prod.productId}
+                        </span>
+                      )}
+                      <span
+                        className={`text-[7.5px] font-700 px-1 py-0.2 rounded uppercase border ${
+                          prod.isActive !== false
+                            ? "bg-green-100 text-green-700 border-green-200"
+                            : "bg-red-100 text-red-600 border-red-200"
+                        }`}
+                      >
+                        {prod.isActive !== false ? "Active" : "Inactive"}
+                      </span>
                     </div>
 
                     <p className="text-[9.5px] text-neutral-400 mt-2 line-clamp-2 leading-relaxed">
