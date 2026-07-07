@@ -7,11 +7,24 @@
 }
 
 @theme inline {
-  /* ── Brand Colors (Orange ) ── */
-  --color-brand-primary:       #F97316;
-  --color-brand-primary-hover: #EA580C;
-  --color-brand-primary-light: #FFF7ED;
-  --color-brand-primary-muted: #FED7AA;
+  /* ── Brand Colors (Maroon) ── */
+  --color-brand-primary:       #8a1538;
+  --color-brand-primary-hover: #70102b;
+  --color-brand-primary-light: #fdf2f4;
+  --color-brand-primary-muted: #f7cbd4;
+
+  /* ── Tailwind Orange Overrides ── */
+  --color-orange-50:           #fdf2f4;
+  --color-orange-100:          #fbe5e9;
+  --color-orange-200:          #f7cbd4;
+  --color-orange-300:          #f0a3b2;
+  --color-orange-400:          #e3708a;
+  --color-orange-500:          #8a1538;
+  --color-orange-600:          #70102b;
+  --color-orange-700:          #590c21;
+  --color-orange-800:          #420817;
+  --color-orange-900:          #2c040d;
+  --color-orange-950:          #1b0107;
 
   /* ── Surface & Backgrounds ── */
   --color-brand-dark:    #1E1B18;
@@ -38,8 +51,8 @@
   --color-info:     #2563EB;
 
   /* ── Legacy aliases  ── */
-  --color-brand-red:       #F97316;
-  --color-brand-red-hover: #EA580C;
+  --color-brand-red:       #8a1538;
+  --color-brand-red-hover: #70102b;
   --color-brand-light-grey: #E7E5E4;
 
   /* ── Typography ── */
@@ -127,7 +140,7 @@ body {
    Focus ring (orange)
 ──────────────────────────────────────── */
 :focus-visible {
-  outline: 2px solid #F97316;
+  outline: 2px solid #8a1538;
   outline-offset: 2px;
   border-radius: 6px;
 }
@@ -136,13 +149,13 @@ body {
    Utility helpers
 ──────────────────────────────────────── */
 .btn-primary {
-  background-color: #F97316;
+  background-color: #8a1538;
   color: white;
   font-weight: 600;
   border-radius: 10px;
   transition: background-color 0.15s, transform 0.1s;
 }
-.btn-primary:hover  { background-color: #EA580C; }
+.btn-primary:hover  { background-color: #70102b; }
 .btn-primary:active { transform: scale(0.98); }
 
 .card {
