@@ -6,6 +6,7 @@ export interface Category {
   image: string;
   description: string;
   displayOrder: number;
+  isActive?: boolean;
 }
 
 export interface ModifierOption {
@@ -42,4 +43,5 @@ export interface Product {
   badge?: "Popular" | "Best Seller" | "New" | null;
   productId?: string;
   isActive?: boolean;
+  kitchenLabel?: "chicken" | "pizza";
 }
