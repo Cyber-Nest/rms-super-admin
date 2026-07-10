@@ -31,6 +31,7 @@ export default function CategoriesTab({
     image: "",
     description: "",
     displayOrder: 0,
+    isActive: true,
   });
 
   // Handle Category Image Upload
@@ -100,6 +101,7 @@ export default function CategoriesTab({
       image: cat.image || "",
       description: cat.description || "",
       displayOrder: cat.displayOrder,
+      isActive: cat.isActive !== false,
     });
   };
 
@@ -111,6 +113,7 @@ export default function CategoriesTab({
       image: "",
       description: "",
       displayOrder: categories.length + 1,
+      isActive: true,
     });
   };
 
@@ -140,6 +143,7 @@ export default function CategoriesTab({
             image: "",
             description: "",
             displayOrder: categories.length + 1,
+            isActive: true,
           });
           fetchCategories();
         }
@@ -319,6 +323,28 @@ export default function CategoriesTab({
               className="w-full bg-[#FAFAF9] border border-neutral-200 rounded-xl px-3 py-2.5 text-[11px] focus:outline-none focus:border-brand-primary"
             />
           </div>
+
+          <div className="flex items-center justify-between p-3 bg-[#FAFAF9] border border-neutral-200 rounded-xl">
+            <div>
+              <span className="block text-[10px] font-800 text-neutral-700 uppercase tracking-wider">Active Status</span>
+              <span className="block text-[8px] text-neutral-400 leading-normal">
+                Inactive categories and their products are hidden from POS &amp; online menu.
+              </span>
+            </div>
+            <button
+              type="button"
+              onClick={() => setCatForm({ ...catForm, isActive: catForm.isActive !== false ? false : true })}
+              className={`relative inline-flex h-5 w-10 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+                catForm.isActive !== false ? 'bg-[#16A34A]' : 'bg-neutral-300'
+              }`}
+            >
+              <span
+                className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
+                  catForm.isActive !== false ? 'translate-x-[20px]' : 'translate-x-0'
+                }`}
+              />
+            </button>
+          </div>
           <div className="flex gap-2">
             {editCat && (
               <button
@@ -396,9 +422,20 @@ export default function CategoriesTab({
                       <h4 className="text-[12px] font-700 text-neutral-900 leading-tight truncate pr-2">
                         {cat.name}
                       </h4>
-                      <span className="bg-orange-100 text-brand-primary text-[8px] font-700 px-1.5 py-0.5 rounded flex-shrink-0">
-                        Order: {cat.displayOrder}
-                      </span>
+                      <div className="flex items-center gap-1.5 flex-shrink-0">
+                        <span
+                          className={`text-[7.5px] font-700 px-1.5 py-0.5 rounded uppercase border ${
+                            cat.isActive !== false
+                              ? "bg-green-100 text-green-700 border-green-200"
+                              : "bg-red-100 text-red-600 border-red-200"
+                          }`}
+                        >
+                          {cat.isActive !== false ? "Active" : "Inactive"}
+                        </span>
+                        <span className="bg-orange-100 text-brand-primary text-[8px] font-700 px-1.5 py-0.5 rounded">
+                          Order: {cat.displayOrder}
+                        </span>
+                      </div>
                     </div>
                     <p className="text-[9px] font-500 text-neutral-400 font-mono">
                       /{cat.slug}
