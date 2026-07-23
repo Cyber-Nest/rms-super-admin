@@ -13,6 +13,7 @@ import {
   ChevronDown,
   Menu,
   X,
+  SlidersHorizontal,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -26,15 +27,22 @@ export default function AdminLayout({ children }: Props) {
   const [mobileOpen, setMobileOpen] = React.useState(false);
 
   const navItems = [
-    { name: "Dashboard", href: "/admin/dashboard", icon: LayoutDashboard },
-    { name: "Menu Management", href: "/admin/menu", icon: Utensils },
-    { name: "Orders", href: "/admin/orders", icon: ClipboardList },
-    { name: "Branches", href: "/admin/branches", icon: Store },
-    { name: "Settings", href: "/admin/settings", icon: Settings },
+    { name: "Dashboard", href: "/admin/dashboard", icon: LayoutDashboard, desc: "Overview & Analytics" },
+    { name: "Menu Management", href: "/admin/menu", icon: Utensils, desc: "Configure master categories & menu items" },
+    { name: "Branch Menu Control", href: "/admin/menu-matrix", icon: SlidersHorizontal, desc: "Control menu availability per branch location" },
+    { name: "Orders", href: "/admin/orders", icon: ClipboardList, desc: "Live restaurant order management" },
+    { name: "Branches", href: "/admin/branches", icon: Store, desc: "Manage multi-unit branch locations" },
+    { name: "Settings", href: "/admin/settings", icon: Settings, desc: "System configuration & preferences" },
   ];
 
+  // Match longest route first so /admin/menu-matrix isn't mis-matched by /admin/menu
+  const sortedItems = [...navItems].sort((a, b) => b.href.length - a.href.length);
   const currentTab =
-    navItems.find((item) => pathname.startsWith(item.href)) || navItems[1]; // default to Menu Management for demo
+    sortedItems.find((item) =>
+      item.href === "/admin/menu"
+        ? pathname === "/admin/menu" || pathname === "/"
+        : pathname.startsWith(item.href)
+    ) || navItems[1];
 
   return (
     <div className="h-screen w-screen overflow-hidden bg-[#F5F4F1] flex font-sans antialiased text-neutral-900 select-none">
@@ -58,9 +66,7 @@ export default function AdminLayout({ children }: Props) {
         {/* Navigation Links */}
         <nav className="flex-1 px-4 py-6 space-y-1 overflow-y-auto">
           {navItems.map((item) => {
-            const active =
-              pathname.startsWith(item.href) ||
-              (item.name === "Menu Management" && pathname === "/");
+            const active = item.name === currentTab.name;
             const Icon = item.icon;
             return (
               <Link
@@ -124,7 +130,7 @@ export default function AdminLayout({ children }: Props) {
                 {currentTab.name}
               </h2>
               <p className="text-[9px] font-500 text-neutral-400 mt-0.5">
-                Configure your core restaurant parameters
+                {currentTab.desc}
               </p>
             </div>
           </div>

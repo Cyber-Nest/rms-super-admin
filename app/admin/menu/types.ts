@@ -7,6 +7,7 @@ export interface Category {
   description: string;
   displayOrder: number;
   isActive?: boolean;
+  disabledBranches?: string[];
 }
 
 export interface ModifierOption {
@@ -44,4 +45,5 @@ export interface Product {
   productId?: string;
   isActive?: boolean;
   kitchenLabel?: "chicken" | "pizza";
+  disabledBranches?: string[];
 }
