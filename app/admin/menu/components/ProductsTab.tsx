@@ -8,9 +8,11 @@ import {
   Trash,
   Image as ImageIcon,
   Loader2,
+  Store,
 } from "lucide-react";
 import { Product, Category, ModifierGroup } from "../types";
 import { API_URL, compressImage } from "../utils";
+import BranchVisibilityModal from "./BranchVisibilityModal";
 
 interface ProductsTabProps {
   products: Product[];
@@ -30,6 +32,11 @@ export default function ProductsTab({
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [editProd, setEditProd] = useState<Product | null>(null);
+  const [visibilityTarget, setVisibilityTarget] = useState<{
+    id: string;
+    name: string;
+    disabledBranches: string[];
+  } | null>(null);
 
   const [prodForm, setProdForm] = useState<Product>({
     name: "",

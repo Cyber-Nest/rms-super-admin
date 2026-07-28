@@ -6,9 +6,11 @@ import {
   Trash,
   Image as ImageIcon,
   Loader2,
+  Store,
 } from "lucide-react";
 import { Category } from "../types";
 import { API_URL, compressImage } from "../utils";
+import BranchVisibilityModal from "./BranchVisibilityModal";
 
 interface CategoriesTabProps {
   categories: Category[];
@@ -24,6 +26,11 @@ export default function CategoriesTab({
   const [loading, setLoading] = useState(false);
   const [uploadingCategory, setUploadingCategory] = useState(false);
   const [editCat, setEditCat] = useState<Category | null>(null);
+  const [visibilityTarget, setVisibilityTarget] = useState<{
+    id: string;
+    name: string;
+    disabledBranches: string[];
+  } | null>(null);
 
   const [catForm, setCatForm] = useState<Category>({
     name: "",
