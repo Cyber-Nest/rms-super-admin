@@ -8,7 +8,6 @@ import {
   MapPin,
   Phone,
   Mail,
-  Lock,
   Search,
   CheckCircle2,
   XCircle,
@@ -17,6 +16,9 @@ import {
   EyeOff,
   Edit2,
   Trash2,
+  Radio,
+  AlertCircle,
+  Power,
 } from "lucide-react";
 
 interface Branch {
@@ -31,6 +33,8 @@ interface Branch {
   lat: number | null;
   lng: number | null;
   isActive: boolean;
+  isLive: boolean;
+  isLocationConfigured?: boolean;
   createdAt: string;
 }
 
@@ -41,6 +45,8 @@ export default function BranchesPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingBranch, setEditingBranch] = useState<Branch | null>(null);
 
+  // Note: Lat and Lng inputs removed from Super Admin form.
+  // Coordinates are set by the restaurant manager in POS Settings.
   const [formData, setFormData] = useState({
     name: "",
     code: "",
@@ -49,8 +55,6 @@ export default function BranchesPage() {
     phone: "",
     email: "",
     password: "",
-    lat: "",
-    lng: "",
     isActive: true,
   });
 
@@ -92,8 +96,6 @@ export default function BranchesPage() {
         phone: branch.phone || "",
         email: branch.email,
         password: branch.password || "",
-        lat: branch.lat !== null ? String(branch.lat) : "",
-        lng: branch.lng !== null ? String(branch.lng) : "",
         isActive: branch.isActive,
       });
     } else {
@@ -106,8 +108,6 @@ export default function BranchesPage() {
         phone: "",
         email: "",
         password: "",
-        lat: "",
-        lng: "",
         isActive: true,
       });
     }
@@ -121,21 +121,15 @@ export default function BranchesPage() {
     setSubmitting(true);
 
     try {
-      const payload = {
-        ...formData,
-        lat: formData.lat ? parseFloat(formData.lat) : null,
-        lng: formData.lng ? parseFloat(formData.lng) : null,
-      };
-
       if (editingBranch) {
-        const res = await axios.patch(`${API_URL}/branches/${editingBranch._id}`, payload);
+        const res = await axios.patch(`${API_URL}/branches/${editingBranch._id}`, formData);
         if (res.data.success) {
           setSuccessMsg("Branch updated successfully!");
           fetchBranches();
           setTimeout(() => setIsModalOpen(false), 1000);
         }
       } else {
-        const res = await axios.post(`${API_URL}/branches`, payload);
+        const res = await axios.post(`${API_URL}/branches`, formData);
         if (res.data.success) {
           setSuccessMsg("New branch created successfully!");
           fetchBranches();
@@ -146,6 +140,58 @@ export default function BranchesPage() {
       setErrorMsg(err.response?.data?.message || err.message || "Failed to save branch");
     } finally {
       setSubmitting(false);
+    }
+  };
+
+  const handleToggleActive = async (branch: Branch) => {
+    try {
+      const newActiveState = !branch.isActive;
+      const payload: { isActive: boolean; isLive?: boolean } = {
+        isActive: newActiveState,
+      };
+      if (!newActiveState) {
+        payload.isLive = false;
+      }
+      const res = await axios.patch(`${API_URL}/branches/${branch._id}`, payload);
+      if (res.data.success) {
+        fetchBranches();
+      }
+    } catch (err: any) {
+      alert("Failed to update branch active status: " + (err.response?.data?.message || err.message));
+    }
+  };
+
+  const handleToggleLive = async (branch: Branch) => {
+    if (!branch.isActive) {
+      alert("⚠️ Cannot Go Live!\n\nThis branch is currently Inactive. Please activate the branch first.");
+      return;
+    }
+
+    const isLocationSet =
+      branch.isLocationConfigured ||
+      (branch.lat !== null &&
+        branch.lng !== null &&
+        branch.lat !== undefined &&
+        branch.lng !== undefined &&
+        !(branch.lat === 0 && branch.lng === 0));
+
+    if (!branch.isLive && !isLocationSet) {
+      alert(
+        "⚠️ Cannot Go Live!\n\nThe restaurant's exact GPS location coordinates (Latitude & Longitude) must be set in POS Settings first."
+      );
+      return;
+    }
+
+    try {
+      const newLiveState = !branch.isLive;
+      const res = await axios.patch(`${API_URL}/branches/${branch._id}`, {
+        isLive: newLiveState,
+      });
+      if (res.data.success) {
+        fetchBranches();
+      }
+    } catch (err: any) {
+      alert("Failed to change live status: " + (err.response?.data?.message || err.message));
     }
   };
 
@@ -167,7 +213,7 @@ export default function BranchesPage() {
   );
 
   return (
-    <div className="space-y-6 max-w-7xl mx-auto">
+    <div className="space-y-6 max-w-7xl mx-auto pb-10">
       {/* Header Bar */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 bg-white p-6 rounded-2xl border border-neutral-200 shadow-sm">
         <div>
@@ -178,7 +224,7 @@ export default function BranchesPage() {
             <div>
               <h1 className="text-lg font-800 text-neutral-900">Branch Management</h1>
               <p className="text-xs text-neutral-500 font-500">
-                Create and manage multiple restaurant locations & login credentials
+                Create & manage multi-unit restaurant locations, operational status, and public Go-Live controls
               </p>
             </div>
           </div>
@@ -193,8 +239,8 @@ export default function BranchesPage() {
         </button>
       </div>
 
-      {/* Search & Counter */}
-      <div className="flex items-center justify-between gap-4">
+      {/* Search & Counters */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="relative flex-1 max-w-md">
           <Search size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-neutral-400" />
           <input
@@ -206,8 +252,12 @@ export default function BranchesPage() {
           />
         </div>
 
-        <div className="text-xs font-700 text-neutral-500">
-          Total Branches: <span className="text-brand-primary font-800">{branches.length}</span>
+        <div className="flex items-center gap-4 text-xs font-700 text-neutral-600 bg-white px-4 py-2 rounded-xl border border-neutral-200">
+          <div>Total: <span className="text-neutral-900 font-800">{branches.length}</span></div>
+          <span className="w-px h-4 bg-neutral-200" />
+          <div>Live: <span className="text-emerald-600 font-800">{branches.filter((b) => b.isLive).length}</span></div>
+          <span className="w-px h-4 bg-neutral-200" />
+          <div>Active: <span className="text-blue-600 font-800">{branches.filter((b) => b.isActive).length}</span></div>
         </div>
       </div>
 
@@ -229,101 +279,164 @@ export default function BranchesPage() {
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredBranches.map((branch) => (
-            <div
-              key={branch._id}
-              className="bg-white rounded-2xl border border-neutral-200 p-5 shadow-sm hover:shadow-md transition-all flex flex-col justify-between"
-            >
-              <div>
-                {/* Branch Card Header */}
-                <div className="flex items-start justify-between gap-2 pb-3 border-b border-neutral-100">
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <span className="px-2 py-0.5 bg-orange-100 text-brand-primary font-800 text-[10px] rounded-md tracking-wider">
-                        {branch.code}
-                      </span>
-                      <span
-                        className={`inline-flex items-center gap-1 text-[10px] font-700 px-2 py-0.5 rounded-full ${
-                          branch.isActive
-                            ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
-                            : "bg-red-50 text-red-700 border border-red-200"
-                        }`}
+          {filteredBranches.map((branch) => {
+            const isLocationSet =
+              branch.isLocationConfigured ||
+              (branch.lat !== null &&
+                branch.lng !== null &&
+                branch.lat !== undefined &&
+                branch.lng !== undefined &&
+                !(branch.lat === 0 && branch.lng === 0));
+
+            return (
+              <div
+                key={branch._id}
+                className={`bg-white rounded-2xl border ${
+                  branch.isLive
+                    ? "border-emerald-300 shadow-emerald-500/5"
+                    : branch.isActive
+                    ? "border-neutral-200 shadow-sm"
+                    : "border-red-200 bg-red-50/20"
+                } p-5 shadow-sm hover:shadow-md transition-all flex flex-col justify-between relative overflow-hidden`}
+              >
+                <div>
+                  {/* Top Status Badges */}
+                  <div className="flex items-start justify-between gap-2 pb-3 border-b border-neutral-100">
+                    <div>
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <span className="px-2 py-0.5 bg-orange-100 text-brand-primary font-800 text-[10px] rounded-md tracking-wider">
+                          {branch.code}
+                        </span>
+
+                        {/* Active Toggle Button */}
+                        <button
+                          onClick={() => handleToggleActive(branch)}
+                          className={`inline-flex items-center gap-1 text-[10px] font-700 px-2 py-0.5 rounded-full transition-all cursor-pointer ${
+                            branch.isActive
+                              ? "bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100"
+                              : "bg-red-50 text-red-700 border border-red-200 hover:bg-red-100"
+                          }`}
+                          title="Click to toggle Active/Inactive"
+                        >
+                          <Power size={9} />
+                          {branch.isActive ? "Active" : "Inactive"}
+                        </button>
+
+                        {/* Live Badge */}
+                        <span
+                          className={`inline-flex items-center gap-1 text-[10px] font-800 px-2 py-0.5 rounded-full ${
+                            branch.isActive && branch.isLive
+                              ? "bg-emerald-500 text-white shadow-xs"
+                              : "bg-neutral-100 text-neutral-500 border border-neutral-200"
+                          }`}
+                        >
+                          <Radio size={9} className={branch.isActive && branch.isLive ? "animate-pulse" : ""} />
+                          {branch.isActive && branch.isLive ? "LIVE" : "Offline"}
+                        </span>
+                      </div>
+                      <h2 className="text-base font-800 text-neutral-900 mt-2">{branch.name}</h2>
+                    </div>
+
+                    <div className="flex items-center gap-1">
+                      <button
+                        onClick={() => handleOpenModal(branch)}
+                        className="w-7 h-7 flex items-center justify-center rounded-lg text-neutral-400 hover:text-brand-primary hover:bg-orange-50 transition-all"
+                        title="Edit Branch"
                       >
-                        {branch.isActive ? (
-                          <>
-                            <CheckCircle2 size={10} /> Active
-                          </>
-                        ) : (
-                          <>
-                            <XCircle size={10} /> Inactive
-                          </>
-                        )}
-                      </span>
+                        <Edit2 size={14} />
+                      </button>
+                      <button
+                        onClick={() => handleDelete(branch._id)}
+                        className="w-7 h-7 flex items-center justify-center rounded-lg text-neutral-400 hover:text-red-600 hover:bg-red-50 transition-all"
+                        title="Delete Branch"
+                      >
+                        <Trash2 size={14} />
+                      </button>
                     </div>
-                    <h2 className="text-base font-800 text-neutral-900 mt-1.5">{branch.name}</h2>
                   </div>
 
-                  <div className="flex items-center gap-1">
-                    <button
-                      onClick={() => handleOpenModal(branch)}
-                      className="w-7 h-7 flex items-center justify-center rounded-lg text-neutral-400 hover:text-brand-primary hover:bg-orange-50 transition-all"
-                      title="Edit Branch"
-                    >
-                      <Edit2 size={14} />
-                    </button>
-                    <button
-                      onClick={() => handleDelete(branch._id)}
-                      className="w-7 h-7 flex items-center justify-center rounded-lg text-neutral-400 hover:text-red-600 hover:bg-red-50 transition-all"
-                      title="Delete Branch"
-                    >
-                      <Trash2 size={14} />
-                    </button>
-                  </div>
-                </div>
-
-                {/* Branch Info List */}
-                <div className="py-4 space-y-2 text-xs text-neutral-600">
-                  <div className="flex items-center gap-2.5">
-                    <Mail size={14} className="text-neutral-400 flex-shrink-0" />
-                    <span className="font-600 text-neutral-800 truncate">{branch.email}</span>
-                  </div>
-
-                  {branch.phone && (
+                  {/* Branch Details */}
+                  <div className="py-4 space-y-2.5 text-xs text-neutral-600">
                     <div className="flex items-center gap-2.5">
-                      <Phone size={14} className="text-neutral-400 flex-shrink-0" />
-                      <span>{branch.phone}</span>
+                      <Mail size={14} className="text-neutral-400 flex-shrink-0" />
+                      <span className="font-600 text-neutral-800 truncate">{branch.email}</span>
                     </div>
-                  )}
 
-                  {branch.address && (
-                    <div className="flex items-start gap-2.5">
-                      <MapPin size={14} className="text-neutral-400 flex-shrink-0 mt-0.5" />
-                      <span>
-                        {branch.address}
-                        {branch.city ? `, ${branch.city}` : ""}
-                      </span>
-                    </div>
-                  )}
+                    {branch.phone && (
+                      <div className="flex items-center gap-2.5">
+                        <Phone size={14} className="text-neutral-400 flex-shrink-0" />
+                        <span>{branch.phone}</span>
+                      </div>
+                    )}
 
-                  {(branch.lat !== null || branch.lng !== null) && (
-                    <div className="text-[10px] text-neutral-400 pl-7 font-mono">
-                      GPS: {branch.lat ?? "N/A"}, {branch.lng ?? "N/A"}
+                    {branch.address && (
+                      <div className="flex items-start gap-2.5">
+                        <MapPin size={14} className="text-neutral-400 flex-shrink-0 mt-0.5" />
+                        <span>
+                          {branch.address}
+                          {branch.city ? `, ${branch.city}` : ""}
+                        </span>
+                      </div>
+                    )}
+
+                    {/* Location Status Indicator */}
+                    <div className="pt-1">
+                      {isLocationSet ? (
+                        <div className="flex items-center gap-2 text-[11px] font-700 text-emerald-700 bg-emerald-50/70 p-2 rounded-xl border border-emerald-100">
+                          <CheckCircle2 size={13} className="text-emerald-600 flex-shrink-0" />
+                          <span>Location Added ({branch.lat?.toFixed(4)}, {branch.lng?.toFixed(4)})</span>
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-2 text-[11px] font-700 text-amber-700 bg-amber-50 p-2 rounded-xl border border-amber-200">
+                          <AlertCircle size={13} className="text-amber-600 flex-shrink-0" />
+                          <span>Location Pending (Setup in POS)</span>
+                        </div>
+                      )}
                     </div>
-                  )}
+                  </div>
+                </div>
+
+                {/* Footer Controls / Go Live Button */}
+                <div className="pt-3 border-t border-neutral-100 flex items-center justify-between gap-2">
+                  <span className="text-[10px] text-neutral-400 font-500">
+                    {new Date(branch.createdAt).toLocaleDateString()}
+                  </span>
+
+                  <button
+                    onClick={() => handleToggleLive(branch)}
+                    disabled={!branch.isActive || (!branch.isLive && !isLocationSet)}
+                    title={
+                      !branch.isActive
+                        ? "Activate branch first to Go Live"
+                        : !isLocationSet
+                        ? "Restaurant GPS coordinates must be configured in POS settings first"
+                        : ""
+                    }
+                    className={`px-3 py-1.5 rounded-xl text-xs font-800 transition-all flex items-center gap-1.5 shadow-xs ${
+                      !branch.isActive
+                        ? "bg-neutral-100 text-neutral-400 border border-neutral-200 cursor-not-allowed opacity-60"
+                        : branch.isLive
+                        ? "bg-neutral-900 text-white hover:bg-neutral-800 cursor-pointer"
+                        : isLocationSet
+                        ? "bg-emerald-600 text-white hover:bg-emerald-700 shadow-emerald-600/20 cursor-pointer"
+                        : "bg-neutral-100 text-neutral-400 border border-neutral-200 cursor-not-allowed opacity-60"
+                    }`}
+                  >
+                    <Radio size={12} />
+                    {!branch.isActive
+                      ? "Offline (Branch Inactive)"
+                      : branch.isLive
+                      ? "Take Offline"
+                      : "Go Live"}
+                  </button>
                 </div>
               </div>
-
-              {/* Branch Footer Note */}
-              <div className="pt-3 border-t border-neutral-100 flex items-center justify-between text-[10px] text-neutral-400">
-                <span>Created: {new Date(branch.createdAt).toLocaleDateString()}</span>
-                {/* <span className="font-700 text-brand-primary">POS Login Ready</span> */}
-              </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
 
-      {/* Create / Edit Modal */}
+      {/* Create / Edit Modal (Without Lat/Lng Inputs) */}
       {isModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs">
           <div className="bg-white rounded-2xl border border-neutral-200 shadow-2xl w-full max-w-xl overflow-hidden animate-scale-up">
@@ -385,7 +498,7 @@ export default function BranchesPage() {
               {/* Login Credentials Section */}
               <div className="p-4 bg-orange-50/50 border border-orange-100 rounded-xl space-y-3">
                 <span className="text-[11px] font-800 uppercase tracking-wider text-brand-primary block">
-                 Branch Login Credentials
+                  Branch Login Credentials
                 </span>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -410,7 +523,7 @@ export default function BranchesPage() {
                     <div className="relative">
                       <input
                         type={showPassword ? "text" : "password"}
-                        required
+                        required={!editingBranch}
                         placeholder="••••••••"
                         value={formData.password}
                         onChange={(e) => setFormData({ ...formData, password: e.target.value })}
@@ -464,30 +577,9 @@ export default function BranchesPage() {
                 />
               </div>
 
-              {/* Coordinates (Optional) */}
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-[11px] font-700 text-neutral-700 mb-1">Latitude (Lat)</label>
-                  <input
-                    type="number"
-                    step="any"
-                    placeholder="43.6532"
-                    value={formData.lat}
-                    onChange={(e) => setFormData({ ...formData, lat: e.target.value })}
-                    className="w-full px-3 py-2 border border-neutral-200 rounded-xl text-xs font-mono focus:outline-none focus:border-brand-primary"
-                  />
-                </div>
-                <div>
-                  <label className="block text-[11px] font-700 text-neutral-700 mb-1">Longitude (Lng)</label>
-                  <input
-                    type="number"
-                    step="any"
-                    placeholder="-79.3832"
-                    value={formData.lng}
-                    onChange={(e) => setFormData({ ...formData, lng: e.target.value })}
-                    className="w-full px-3 py-2 border border-neutral-200 rounded-xl text-xs font-mono focus:outline-none focus:border-brand-primary"
-                  />
-                </div>
+              {/* Location Setup Note */}
+              <div className="p-3 bg-blue-50 border border-blue-100 rounded-xl text-[11px] text-blue-700 font-500">
+                ℹ️ <strong>Location Note:</strong> Restaurant GPS coordinates will be captured directly by the branch manager in the POS Settings tab before Super Admin can take this branch <strong>Live</strong>.
               </div>
 
               {/* Active Toggle */}
@@ -497,10 +589,10 @@ export default function BranchesPage() {
                   id="isActive"
                   checked={formData.isActive}
                   onChange={(e) => setFormData({ ...formData, isActive: e.target.checked })}
-                  className="w-4 h-4 text-brand-primary rounded focus:ring-brand-primary"
+                  className="w-4 h-4 text-brand-primary rounded focus:ring-brand-primary cursor-pointer"
                 />
                 <label htmlFor="isActive" className="text-xs font-700 text-neutral-800 cursor-pointer">
-                  Branch Account Active
+                  Branch Operational (Active)
                 </label>
               </div>
 
@@ -509,14 +601,14 @@ export default function BranchesPage() {
                 <button
                   type="button"
                   onClick={() => setIsModalOpen(false)}
-                  className="px-4 py-2 border border-neutral-200 text-neutral-700 text-xs font-700 rounded-xl hover:bg-neutral-50 transition-all"
+                  className="px-4 py-2 border border-neutral-200 text-neutral-700 text-xs font-700 rounded-xl hover:bg-neutral-50 transition-all cursor-pointer"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={submitting}
-                  className="px-5 py-2 bg-brand-primary hover:bg-brand-primary/90 text-white text-xs font-700 rounded-xl transition-all shadow-md shadow-brand-primary/20 disabled:opacity-50"
+                  className="px-5 py-2 bg-brand-primary hover:bg-brand-primary/90 text-white text-xs font-700 rounded-xl transition-all shadow-md shadow-brand-primary/20 disabled:opacity-50 cursor-pointer"
                 >
                   {submitting ? "Saving..." : editingBranch ? "Update Branch" : "Create Branch"}
                 </button>
