@@ -42,6 +42,18 @@ export default function AdminLayout({ children }: Props) {
   useEffect(() => {
     if (pathname === "/login") return;
 
+    const syncAdminUser = () => {
+      if (typeof window === "undefined") return;
+      const rawUser = localStorage.getItem("rms_superadmin");
+      if (rawUser) {
+        try {
+          setAdminUser(JSON.parse(rawUser));
+        } catch (e) {}
+      }
+    };
+
+    window.addEventListener("storage", syncAdminUser);
+
     const checkSuperAdminSession = async () => {
       if (typeof window === "undefined") return;
       const token = localStorage.getItem("rms_superadmin_token");
@@ -80,6 +92,10 @@ export default function AdminLayout({ children }: Props) {
     };
 
     checkSuperAdminSession();
+
+    return () => {
+      window.removeEventListener("storage", syncAdminUser);
+    };
   }, [pathname, router]);
 
   // Fetch branches when POS dropdown is opened
