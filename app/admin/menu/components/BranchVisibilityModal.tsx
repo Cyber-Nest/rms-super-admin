@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import axios from "axios";
+import toast from "react-hot-toast";
 import { Store, Eye, EyeOff, Check, AlertCircle } from "lucide-react";
 import { API_URL } from "../utils";
 
@@ -85,7 +86,7 @@ export default function BranchVisibilityModal({
         onUpdated();
       }
     } catch (err: any) {
-      alert("Failed to update branch visibility: " + (err.response?.data?.message || err.message));
+      toast.error("Failed to update branch visibility: " + (err.response?.data?.message || err.message));
     } finally {
       setUpdatingBranchId(null);
     }

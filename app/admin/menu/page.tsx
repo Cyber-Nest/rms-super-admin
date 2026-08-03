@@ -5,7 +5,7 @@ import { Check } from "lucide-react";
 import axios from "axios";
 
 import { Category, ModifierGroup, Product } from "./types";
-import { API_URL } from "./utils";
+import { API_URL, getAuthConfig } from "./utils";
 
 import CategoriesTab from "./components/CategoriesTab";
 import ModifiersTab from "./components/ModifiersTab";
@@ -27,7 +27,7 @@ export default function MenuPage() {
 
   const fetchCategories = async () => {
     try {
-      const res = await axios.get(`${API_URL}/categories`);
+      const res = await axios.get(`${API_URL}/categories`, getAuthConfig());
       if (res.data.success) setCategories(res.data.data);
     } catch (err) {
       console.error(err);
@@ -36,7 +36,7 @@ export default function MenuPage() {
 
   const fetchModifiers = async () => {
     try {
-      const res = await axios.get(`${API_URL}/modifiers`);
+      const res = await axios.get(`${API_URL}/modifiers`, getAuthConfig());
       if (res.data.success) setModifiers(res.data.data);
     } catch (err) {
       console.error(err);
@@ -45,7 +45,7 @@ export default function MenuPage() {
 
   const fetchProducts = async () => {
     try {
-      const res = await axios.get(`${API_URL}/products`);
+      const res = await axios.get(`${API_URL}/products`, getAuthConfig());
       if (res.data.success) setProducts(res.data.data);
     } catch (err) {
       console.error(err);

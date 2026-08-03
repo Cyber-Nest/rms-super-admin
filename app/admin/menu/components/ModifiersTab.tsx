@@ -12,6 +12,7 @@ import {
   SlidersHorizontal,
   Settings2,
 } from "lucide-react";
+import toast from "react-hot-toast";
 import { ModifierGroup, ModifierOption } from "../types";
 import { API_URL, compressImage } from "../utils";
 
@@ -251,9 +252,7 @@ export default function ModifiersTab({
     }
   };
 
-  const handleDeleteModifier = async (id: string) => {
-    if (!confirm("Are you sure you want to delete this modifier group?"))
-      return;
+  const executeDeleteModifier = async (id: string) => {
     const modToDelete = modifiers.find((m) => m.id === id || m._id === id);
     try {
       const res = await axios.delete(`${API_URL}/modifiers/${id}`);
@@ -286,6 +285,31 @@ export default function ModifiersTab({
         "error",
       );
     }
+  };
+
+  const handleDeleteModifier = (id: string) => {
+    toast((t) => (
+      <div className="flex flex-col gap-2 p-1 text-xs">
+        <p className="font-700 text-neutral-900">Are you sure you want to delete this modifier group?</p>
+        <div className="flex items-center justify-end gap-2 mt-1">
+          <button
+            onClick={() => toast.dismiss(t.id)}
+            className="px-2.5 py-1 font-600 bg-neutral-100 hover:bg-neutral-200 text-neutral-700 rounded-lg cursor-pointer"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={() => {
+              toast.dismiss(t.id);
+              executeDeleteModifier(id);
+            }}
+            className="px-2.5 py-1 font-700 bg-red-600 hover:bg-red-700 text-white rounded-lg cursor-pointer shadow-sm"
+          >
+            Delete Modifier Group
+          </button>
+        </div>
+      </div>
+    ), { duration: 5000, position: "top-center" });
   };
 
   const isModifierButtonDisabled =

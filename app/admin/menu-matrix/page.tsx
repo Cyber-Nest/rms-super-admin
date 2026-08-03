@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useMemo } from "react";
 import axios from "axios";
+import toast from "react-hot-toast";
 import {
   SlidersHorizontal,
   Store,
@@ -61,13 +62,22 @@ export default function MenuMatrixPage() {
   const BASE_API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
   const MENU_API_URL = `${BASE_API_URL}/menu`;
 
+  const getAuthConfig = () => {
+    if (typeof window === "undefined") return { withCredentials: true };
+    const token = localStorage.getItem("rms_superadmin_token");
+    return {
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+      withCredentials: true,
+    };
+  };
+
   const fetchData = async () => {
     try {
       setLoading(true);
       const [branchesRes, catRes, prodRes] = await Promise.all([
-        axios.get(`${BASE_API_URL}/branches`),
-        axios.get(`${MENU_API_URL}/categories`),
-        axios.get(`${MENU_API_URL}/products`),
+        axios.get(`${BASE_API_URL}/branches`, getAuthConfig()),
+        axios.get(`${MENU_API_URL}/categories`, getAuthConfig()),
+        axios.get(`${MENU_API_URL}/products`, getAuthConfig()),
       ]);
 
       if (branchesRes.data.success) {
@@ -100,10 +110,11 @@ export default function MenuMatrixPage() {
     setUpdatingId(key);
     try {
       const isHidden = !isCurrentlyHidden;
-      const res = await axios.patch(`${MENU_API_URL}/categories/${categoryId}/toggle-branch`, {
-        branchId,
-        isHidden,
-      });
+      const res = await axios.patch(
+        `${MENU_API_URL}/categories/${categoryId}/toggle-branch`,
+        { branchId, isHidden },
+        getAuthConfig()
+      );
 
       if (res.data.success) {
         setCategories((prev) =>
@@ -121,7 +132,7 @@ export default function MenuMatrixPage() {
         );
       }
     } catch (err: any) {
-      alert("Failed to update category visibility: " + (err.response?.data?.message || err.message));
+      toast.error("Failed to update category visibility: " + (err.response?.data?.message || err.message));
     } finally {
       setUpdatingId(null);
     }
@@ -133,10 +144,11 @@ export default function MenuMatrixPage() {
     setUpdatingId(key);
     try {
       const isHidden = !isCurrentlyHidden;
-      const res = await axios.patch(`${MENU_API_URL}/products/${productId}/toggle-branch`, {
-        branchId,
-        isHidden,
-      });
+      const res = await axios.patch(
+        `${MENU_API_URL}/products/${productId}/toggle-branch`,
+        { branchId, isHidden },
+        getAuthConfig()
+      );
 
       if (res.data.success) {
         setProducts((prev) =>
@@ -154,7 +166,7 @@ export default function MenuMatrixPage() {
         );
       }
     } catch (err: any) {
-      alert("Failed to update product visibility: " + (err.response?.data?.message || err.message));
+      toast.error("Failed to update product visibility: " + (err.response?.data?.message || err.message));
     } finally {
       setUpdatingId(null);
     }
