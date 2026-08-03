@@ -1,5 +1,14 @@
 export const API_URL = `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api"}/menu`;
 
+export const getAuthConfig = () => {
+  if (typeof window === "undefined") return { withCredentials: true };
+  const token = localStorage.getItem("rms_superadmin_token");
+  return {
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
+    withCredentials: true,
+  };
+};
+
 //image compression helper
 export const compressImage = (
   file: File,

@@ -65,10 +65,19 @@ export default function BranchesPage() {
 
   const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
 
+  const getAuthConfig = () => {
+    if (typeof window === "undefined") return { withCredentials: true };
+    const token = localStorage.getItem("rms_superadmin_token");
+    return {
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+      withCredentials: true,
+    };
+  };
+
   const fetchBranches = async () => {
     try {
       setLoading(true);
-      const res = await axios.get(`${API_URL}/branches`);
+      const res = await axios.get(`${API_URL}/branches`, getAuthConfig());
       if (res.data.success) {
         setBranches(res.data.data);
       }
@@ -122,14 +131,18 @@ export default function BranchesPage() {
 
     try {
       if (editingBranch) {
-        const res = await axios.patch(`${API_URL}/branches/${editingBranch._id}`, formData);
+        const res = await axios.patch(
+          `${API_URL}/branches/${editingBranch._id}`,
+          formData,
+          getAuthConfig()
+        );
         if (res.data.success) {
           setSuccessMsg("Branch updated successfully!");
           fetchBranches();
           setTimeout(() => setIsModalOpen(false), 1000);
         }
       } else {
-        const res = await axios.post(`${API_URL}/branches`, formData);
+        const res = await axios.post(`${API_URL}/branches`, formData, getAuthConfig());
         if (res.data.success) {
           setSuccessMsg("New branch created successfully!");
           fetchBranches();
@@ -152,7 +165,11 @@ export default function BranchesPage() {
       if (!newActiveState) {
         payload.isLive = false;
       }
-      const res = await axios.patch(`${API_URL}/branches/${branch._id}`, payload);
+      const res = await axios.patch(
+        `${API_URL}/branches/${branch._id}`,
+        payload,
+        getAuthConfig()
+      );
       if (res.data.success) {
         fetchBranches();
       }
@@ -184,9 +201,11 @@ export default function BranchesPage() {
 
     try {
       const newLiveState = !branch.isLive;
-      const res = await axios.patch(`${API_URL}/branches/${branch._id}`, {
-        isLive: newLiveState,
-      });
+      const res = await axios.patch(
+        `${API_URL}/branches/${branch._id}`,
+        { isLive: newLiveState },
+        getAuthConfig()
+      );
       if (res.data.success) {
         fetchBranches();
       }
@@ -198,7 +217,7 @@ export default function BranchesPage() {
   const handleDelete = async (id: string) => {
     if (!confirm("Are you sure you want to delete this branch?")) return;
     try {
-      await axios.delete(`${API_URL}/branches/${id}`);
+      await axios.delete(`${API_URL}/branches/${id}`, getAuthConfig());
       fetchBranches();
     } catch (err: any) {
       alert("Failed to delete branch: " + (err.response?.data?.message || err.message));
