@@ -21,6 +21,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
+import toast, { Toaster } from "react-hot-toast";
 
 interface Props {
   children: React.ReactNode;
@@ -148,32 +149,56 @@ export default function AdminLayout({ children }: Props) {
         setBranchesDropdownOpen(false);
       }
     } catch (err: any) {
-      alert(err.response?.data?.message || "Could not launch branch POS");
+      toast.error(err.response?.data?.message || "Could not launch branch POS");
     } finally {
       setLaunchingBranchId(null);
     }
   };
 
-  const handleLogout = async () => {
-    if (confirm("Are you sure you want to log out of Super Admin Portal?")) {
-      try {
-        const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
-        const token = localStorage.getItem("rms_superadmin_token");
-        await axios.post(
-          `${API_URL}/branches/admin/logout`,
-          {},
-          {
-            headers: { Authorization: `Bearer ${token}` },
-            withCredentials: true,
-          }
-        );
-      } catch (e) {}
+  const executeLogout = async () => {
+    try {
+      const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
+      const token = localStorage.getItem("rms_superadmin_token");
+      await axios.post(
+        `${API_URL}/branches/admin/logout`,
+        {},
+        {
+          headers: { Authorization: `Bearer ${token}` },
+          withCredentials: true,
+        }
+      );
+    } catch (e) {}
 
-      localStorage.removeItem("rms_superadmin_token");
-      localStorage.removeItem("rms_superadmin");
-      document.cookie = "rms_superadmin_token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
-      router.push("/login");
-    }
+    localStorage.removeItem("rms_superadmin_token");
+    localStorage.removeItem("rms_superadmin");
+    document.cookie = "rms_superadmin_token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
+    toast.success("Logged out successfully");
+    router.push("/login");
+  };
+
+  const confirmLogout = () => {
+    toast((t) => (
+      <div className="flex flex-col gap-2 p-1 text-xs">
+        <p className="font-700 text-neutral-900">Are you sure you want to log out?</p>
+        <div className="flex items-center justify-end gap-2 mt-1">
+          <button
+            onClick={() => toast.dismiss(t.id)}
+            className="px-2.5 py-1 font-600 bg-neutral-100 hover:bg-neutral-200 text-neutral-700 rounded-lg transition-all cursor-pointer"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={async () => {
+              toast.dismiss(t.id);
+              await executeLogout();
+            }}
+            className="px-2.5 py-1 font-700 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-all shadow-sm cursor-pointer"
+          >
+            Logout
+          </button>
+        </div>
+      </div>
+    ), { duration: 4000, position: "top-center" });
   };
 
   // Skip layout if on /login page
@@ -260,7 +285,7 @@ export default function AdminLayout({ children }: Props) {
               </p>
             </div>
             <button
-              onClick={handleLogout}
+              onClick={confirmLogout}
               className="w-7 h-7 flex items-center justify-center rounded-lg text-neutral-500 hover:text-brand-primary hover:bg-neutral-800 transition-all cursor-pointer"
               title="Logout Super Admin"
             >
@@ -387,24 +412,32 @@ export default function AdminLayout({ children }: Props) {
 
             <span className="w-px h-6 bg-neutral-200" />
 
-            {/* Profile Dropdown */}
-            <div
-              onClick={handleLogout}
-              className="flex items-center gap-2 cursor-pointer hover:opacity-85 transition-opacity"
-              title="Click to logout"
-            >
+            {/* Profile Info (Click to logout removed) */}
+            <div className="flex items-center gap-2">
               <div className="w-7.5 h-7.5 bg-orange-100 text-brand-primary rounded-lg flex items-center justify-center font-700 text-[10px]">
-                {adminUser?.name ? adminUser.name.charAt(0) : "A"}
+                {adminUser?.name ? adminUser.name.charAt(0) : "C"}
               </div>
               <div className="hidden sm:block text-left">
                 <p className="text-[10px] font-700 text-neutral-800 leading-tight">
-                  {adminUser?.name || "Yogesh Kumar"}
+                  {adminUser?.name || "Cyber Nest Super Admin"}
                 </p>
                 <p className="text-[8px] font-600 text-neutral-400 uppercase tracking-wide leading-none mt-0.5">
                   Brand Manager
                 </p>
               </div>
             </div>
+
+            <span className="w-px h-6 bg-neutral-200" />
+
+            {/* Dedicated Logout Button */}
+            <button
+              onClick={confirmLogout}
+              className="px-3 py-1.5 bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 rounded-xl text-xs font-700 transition-all flex items-center gap-1.5 cursor-pointer shadow-sm"
+              title="Logout Super Admin"
+            >
+              <LogOut size={13} />
+              <span className="hidden sm:inline">Logout</span>
+            </button>
           </div>
         </header>
 
@@ -466,7 +499,7 @@ export default function AdminLayout({ children }: Props) {
 
             <div className="p-4 border-t border-neutral-800 bg-[#161412]">
               <button
-                onClick={handleLogout}
+                onClick={confirmLogout}
                 className="w-full flex items-center justify-center gap-2 py-2 bg-neutral-800 text-red-400 rounded-xl text-xs font-700 cursor-pointer"
               >
                 <LogOut size={14} />
@@ -476,6 +509,7 @@ export default function AdminLayout({ children }: Props) {
           </div>
         </div>
       )}
+      <Toaster position="top-right" />
     </div>
   );
 }

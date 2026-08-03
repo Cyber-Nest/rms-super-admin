@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import axios from "axios";
+import toast from "react-hot-toast";
 import {
   Store,
   Plus,
@@ -172,15 +173,16 @@ export default function BranchesPage() {
       );
       if (res.data.success) {
         fetchBranches();
+        toast.success("Branch status updated");
       }
     } catch (err: any) {
-      alert("Failed to update branch active status: " + (err.response?.data?.message || err.message));
+      toast.error("Failed to update branch active status: " + (err.response?.data?.message || err.message));
     }
   };
 
   const handleToggleLive = async (branch: Branch) => {
     if (!branch.isActive) {
-      alert("⚠️ Cannot Go Live!\n\nThis branch is currently Inactive. Please activate the branch first.");
+      toast.error("Cannot Go Live! This branch is currently Inactive. Please activate the branch first.");
       return;
     }
 
@@ -193,8 +195,8 @@ export default function BranchesPage() {
         !(branch.lat === 0 && branch.lng === 0));
 
     if (!branch.isLive && !isLocationSet) {
-      alert(
-        "⚠️ Cannot Go Live!\n\nThe restaurant's exact GPS location coordinates (Latitude & Longitude) must be set in POS Settings first."
+      toast.error(
+        "Cannot Go Live! The restaurant's exact GPS location coordinates (Latitude & Longitude) must be set in POS Settings first."
       );
       return;
     }
@@ -208,20 +210,46 @@ export default function BranchesPage() {
       );
       if (res.data.success) {
         fetchBranches();
+        toast.success(`Branch is now ${newLiveState ? "LIVE" : "OFFLINE"}`);
       }
     } catch (err: any) {
-      alert("Failed to change live status: " + (err.response?.data?.message || err.message));
+      toast.error("Failed to change live status: " + (err.response?.data?.message || err.message));
     }
   };
 
-  const handleDelete = async (id: string) => {
-    if (!confirm("Are you sure you want to delete this branch?")) return;
+  const executeDeleteBranch = async (id: string) => {
     try {
       await axios.delete(`${API_URL}/branches/${id}`, getAuthConfig());
+      toast.success("Branch deleted successfully");
       fetchBranches();
     } catch (err: any) {
-      alert("Failed to delete branch: " + (err.response?.data?.message || err.message));
+      toast.error("Failed to delete branch: " + (err.response?.data?.message || err.message));
     }
+  };
+
+  const handleDelete = (id: string) => {
+    toast((t) => (
+      <div className="flex flex-col gap-2 p-1 text-xs">
+        <p className="font-700 text-neutral-900">Are you sure you want to delete this branch?</p>
+        <div className="flex items-center justify-end gap-2 mt-1">
+          <button
+            onClick={() => toast.dismiss(t.id)}
+            className="px-2.5 py-1 font-600 bg-neutral-100 hover:bg-neutral-200 text-neutral-700 rounded-lg transition-all cursor-pointer"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={async () => {
+              toast.dismiss(t.id);
+              await executeDeleteBranch(id);
+            }}
+            className="px-2.5 py-1 font-700 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-all shadow-sm cursor-pointer"
+          >
+            Delete
+          </button>
+        </div>
+      </div>
+    ), { duration: 5000, position: "top-center" });
   };
 
   const filteredBranches = branches.filter(

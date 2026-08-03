@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useMemo } from "react";
 import axios from "axios";
+import toast from "react-hot-toast";
 import {
   SlidersHorizontal,
   Store,
@@ -131,7 +132,7 @@ export default function MenuMatrixPage() {
         );
       }
     } catch (err: any) {
-      alert("Failed to update category visibility: " + (err.response?.data?.message || err.message));
+      toast.error("Failed to update category visibility: " + (err.response?.data?.message || err.message));
     } finally {
       setUpdatingId(null);
     }
@@ -165,7 +166,7 @@ export default function MenuMatrixPage() {
         );
       }
     } catch (err: any) {
-      alert("Failed to update product visibility: " + (err.response?.data?.message || err.message));
+      toast.error("Failed to update product visibility: " + (err.response?.data?.message || err.message));
     } finally {
       setUpdatingId(null);
     }

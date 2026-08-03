@@ -8,6 +8,7 @@ import {
   Loader2,
   Store,
 } from "lucide-react";
+import toast from "react-hot-toast";
 import { Category } from "../types";
 import { API_URL, compressImage } from "../utils";
 import BranchVisibilityModal from "./BranchVisibilityModal";
@@ -165,8 +166,7 @@ export default function CategoriesTab({
     }
   };
 
-  const handleDeleteCategory = async (id: string) => {
-    if (!confirm("Are you sure you want to delete this category?")) return;
+  const executeDeleteCategory = async (id: string) => {
     const catToDelete = categories.find((c) => c.id === id || c._id === id);
     try {
       const res = await axios.delete(`${API_URL}/categories/${id}`);
@@ -192,6 +192,31 @@ export default function CategoriesTab({
         "error",
       );
     }
+  };
+
+  const handleDeleteCategory = (id: string) => {
+    toast((t) => (
+      <div className="flex flex-col gap-2 p-1 text-xs">
+        <p className="font-700 text-neutral-900">Are you sure you want to delete this category?</p>
+        <div className="flex items-center justify-end gap-2 mt-1">
+          <button
+            onClick={() => toast.dismiss(t.id)}
+            className="px-2.5 py-1 font-600 bg-neutral-100 hover:bg-neutral-200 text-neutral-700 rounded-lg cursor-pointer"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={() => {
+              toast.dismiss(t.id);
+              executeDeleteCategory(id);
+            }}
+            className="px-2.5 py-1 font-700 bg-red-600 hover:bg-red-700 text-white rounded-lg cursor-pointer shadow-sm"
+          >
+            Delete Category
+          </button>
+        </div>
+      </div>
+    ), { duration: 5000, position: "top-center" });
   };
 
   const isCategoryButtonDisabled =
