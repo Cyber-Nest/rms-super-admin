@@ -143,27 +143,33 @@ export default function AdminLayout({ children }: Props) {
         const ticket = res.data.data.ticket;
         let branchAppUrl = process.env.NEXT_PUBLIC_BRANCH_APP_URL;
 
-        if (!branchAppUrl && typeof window !== "undefined") {
-          const currentOrigin = window.location.origin;
-          const currentPort = window.location.port;
-          const currentHost = window.location.hostname;
-          const currentProtocol = window.location.protocol;
+        if (!branchAppUrl || !branchAppUrl.trim()) {
+          if (typeof window !== "undefined") {
+            const currentOrigin = window.location.origin;
+            const currentPort = window.location.port;
+            const currentHost = window.location.hostname;
+            const currentProtocol = window.location.protocol;
 
-          // Local development default resolution
-          if (currentPort === "3000") {
-            branchAppUrl = `${currentProtocol}//${currentHost}:3001`;
-          } else if (currentPort === "3002") {
-            branchAppUrl = `${currentProtocol}//${currentHost}:3000`;
-          } else if (currentHost.includes("localhost") || currentHost.includes("127.0.0.1")) {
-            branchAppUrl = `${currentProtocol}//${currentHost}:3001`;
-          } else {
-            // Smart Production Domain fallback
-            if (currentHost.startsWith("admin.")) {
+            if (currentPort === "3000") {
+              branchAppUrl = `${currentProtocol}//${currentHost}:3001`;
+            } else if (currentPort === "3002") {
+              branchAppUrl = `${currentProtocol}//${currentHost}:3000`;
+            } else if (currentHost.includes("localhost") || currentHost.includes("127.0.0.1")) {
+              branchAppUrl = `${currentProtocol}//${currentHost}:3001`;
+            }
+            else if (currentHost.startsWith("admin.")) {
               branchAppUrl = `${currentProtocol}//${currentHost.replace("admin.", "pos.")}`;
             } else if (currentHost.startsWith("superadmin.")) {
               branchAppUrl = `${currentProtocol}//${currentHost.replace("superadmin.", "pos.")}`;
+            }
+            else if (currentHost.includes("super-admin")) {
+              branchAppUrl = `${currentProtocol}//${currentHost.replace("super-admin", "pos")}`;
+            } else if (currentHost.includes("superadmin")) {
+              branchAppUrl = `${currentProtocol}//${currentHost.replace("superadmin", "pos")}`;
+            } else if (currentHost.includes("admin")) {
+              branchAppUrl = `${currentProtocol}//${currentHost.replace("admin", "pos")}`;
             } else {
-              branchAppUrl = currentOrigin;
+              branchAppUrl = "https://rms-pos-v1.vercel.app";
             }
           }
         }

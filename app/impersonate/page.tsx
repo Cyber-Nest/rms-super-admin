@@ -11,7 +11,7 @@ function RedirectorContent() {
     if (ticket && typeof window !== "undefined") {
       let branchBaseUrl = process.env.NEXT_PUBLIC_BRANCH_APP_URL;
 
-      if (!branchBaseUrl) {
+      if (!branchBaseUrl || !branchBaseUrl.trim()) {
         const protocol = window.location.protocol;
         const hostname = window.location.hostname;
         const port = window.location.port;
@@ -26,8 +26,14 @@ function RedirectorContent() {
           branchBaseUrl = `${protocol}//${hostname.replace("admin.", "pos.")}`;
         } else if (hostname.startsWith("superadmin.")) {
           branchBaseUrl = `${protocol}//${hostname.replace("superadmin.", "pos.")}`;
+        } else if (hostname.includes("super-admin")) {
+          branchBaseUrl = `${protocol}//${hostname.replace("super-admin", "pos")}`;
+        } else if (hostname.includes("superadmin")) {
+          branchBaseUrl = `${protocol}//${hostname.replace("superadmin", "pos")}`;
+        } else if (hostname.includes("admin")) {
+          branchBaseUrl = `${protocol}//${hostname.replace("admin", "pos")}`;
         } else {
-          branchBaseUrl = `${protocol}//${hostname}${port ? `:${port}` : ""}`;
+          branchBaseUrl = "https://rms-pos-v1.vercel.app";
         }
       }
 
