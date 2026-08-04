@@ -46,7 +46,7 @@ export default function BranchVisibilityModal({
     const fetchBranches = async () => {
       try {
         setLoading(true);
-        const res = await axios.get(`${API_URL}/branches`);
+        const res = await axios.get(`${API_URL}/branches?isActive=true&minimal=true`);
         if (res.data.success) {
           setBranches(res.data.data);
         }

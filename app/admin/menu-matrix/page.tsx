@@ -75,9 +75,9 @@ export default function MenuMatrixPage() {
     try {
       setLoading(true);
       const [branchesRes, catRes, prodRes] = await Promise.all([
-        axios.get(`${BASE_API_URL}/branches`, getAuthConfig()),
+        axios.get(`${BASE_API_URL}/branches?isActive=true&minimal=true`, getAuthConfig()),
         axios.get(`${MENU_API_URL}/categories`, getAuthConfig()),
-        axios.get(`${MENU_API_URL}/products`, getAuthConfig()),
+        axios.get(`${MENU_API_URL}/products?minimal=true`, getAuthConfig()),
       ]);
 
       if (branchesRes.data.success) {
