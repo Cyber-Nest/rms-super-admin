@@ -108,7 +108,7 @@ export default function AdminLayout({ children }: Props) {
       try {
         const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
         const token = localStorage.getItem("rms_superadmin_token");
-        const res = await axios.get(`${API_URL}/branches?isActive=true`, {
+        const res = await axios.get(`${API_URL}/branches?isActive=true&minimal=true`, {
           headers: { Authorization: `Bearer ${token}` },
           withCredentials: true,
         });
