@@ -20,6 +20,12 @@ function RedirectorContent() {
           branchBaseUrl = `${protocol}//${hostname}:3001`;
         } else if (port === "3002") {
           branchBaseUrl = `${protocol}//${hostname}:3000`;
+        } else if (hostname.includes("localhost") || hostname.includes("127.0.0.1")) {
+          branchBaseUrl = `${protocol}//${hostname}:3001`;
+        } else if (hostname.startsWith("admin.")) {
+          branchBaseUrl = `${protocol}//${hostname.replace("admin.", "pos.")}`;
+        } else if (hostname.startsWith("superadmin.")) {
+          branchBaseUrl = `${protocol}//${hostname.replace("superadmin.", "pos.")}`;
         } else {
           branchBaseUrl = `${protocol}//${hostname}${port ? `:${port}` : ""}`;
         }
