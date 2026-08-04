@@ -147,14 +147,24 @@ export default function AdminLayout({ children }: Props) {
           const currentOrigin = window.location.origin;
           const currentPort = window.location.port;
           const currentHost = window.location.hostname;
+          const currentProtocol = window.location.protocol;
 
-          // If Super Admin is running on 3000, Branch POS is on 3001
+          // Local development default resolution
           if (currentPort === "3000") {
-            branchAppUrl = `${window.location.protocol}//${currentHost}:3001`;
+            branchAppUrl = `${currentProtocol}//${currentHost}:3001`;
           } else if (currentPort === "3002") {
-            branchAppUrl = `${window.location.protocol}//${currentHost}:3000`;
+            branchAppUrl = `${currentProtocol}//${currentHost}:3000`;
+          } else if (currentHost.includes("localhost") || currentHost.includes("127.0.0.1")) {
+            branchAppUrl = `${currentProtocol}//${currentHost}:3001`;
           } else {
-            branchAppUrl = "http://localhost:3001";
+            // Smart Production Domain fallback
+            if (currentHost.startsWith("admin.")) {
+              branchAppUrl = `${currentProtocol}//${currentHost.replace("admin.", "pos.")}`;
+            } else if (currentHost.startsWith("superadmin.")) {
+              branchAppUrl = `${currentProtocol}//${currentHost.replace("superadmin.", "pos.")}`;
+            } else {
+              branchAppUrl = currentOrigin;
+            }
           }
         }
 
