@@ -18,6 +18,7 @@ import {
   Search,
   ExternalLink,
   Loader2,
+  Tag,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
@@ -242,6 +243,7 @@ export default function AdminLayout({ children }: Props) {
     { name: "Dashboard", href: "/admin/dashboard", icon: LayoutDashboard, desc: "Overview & Analytics" },
     { name: "Menu Management", href: "/admin/menu", icon: Utensils, desc: "Configure master categories & menu items" },
     { name: "Branch Menu Control", href: "/admin/menu-matrix", icon: SlidersHorizontal, desc: "Control menu availability per branch location" },
+    { name: "Promo Codes", href: "/admin/promo-codes", icon: Tag, desc: "Manage discount codes & promotions" },
     { name: "Orders", href: "/admin/orders", icon: ClipboardList, desc: "Live restaurant order management" },
     { name: "Branches", href: "/admin/branches", icon: Store, desc: "Manage multi-unit branch locations" },
     { name: "Settings", href: "/admin/settings", icon: Settings, desc: "System configuration & preferences" },
