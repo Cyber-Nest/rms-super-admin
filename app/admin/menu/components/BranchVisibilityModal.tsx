@@ -4,7 +4,7 @@ import React, { useState, useEffect } from "react";
 import axios from "axios";
 import toast from "react-hot-toast";
 import { Store, Eye, EyeOff, Check, AlertCircle } from "lucide-react";
-import { API_URL } from "../utils";
+import { API_URL, getAuthConfig } from "../utils";
 
 interface Branch {
   _id: string;
@@ -46,7 +46,7 @@ export default function BranchVisibilityModal({
     const fetchBranches = async () => {
       try {
         setLoading(true);
-        const res = await axios.get(`${API_URL}/branches?isActive=true&minimal=true`);
+        const res = await axios.get(`${API_URL}/branches?isActive=true&minimal=true`, getAuthConfig());
         if (res.data.success) {
           setBranches(res.data.data);
         }
@@ -75,7 +75,7 @@ export default function BranchVisibilityModal({
       const res = await axios.patch(endpoint, {
         branchId,
         isHidden: newHiddenState,
-      });
+      }, getAuthConfig());
 
       if (res.data.success) {
         if (newHiddenState) {

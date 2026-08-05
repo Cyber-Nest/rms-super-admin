@@ -12,7 +12,7 @@ import {
 } from "lucide-react";
 import toast from "react-hot-toast";
 import { Product, Category, ModifierGroup } from "../types";
-import { API_URL, compressImage } from "../utils";
+import { API_URL, compressImage, getAuthConfig } from "../utils";
 import BranchVisibilityModal from "./BranchVisibilityModal";
 
 interface ProductsTabProps {
@@ -81,7 +81,11 @@ export default function ProductsTab({
       formData.append("image", compressedFile);
 
       const res = await axios.post(`${API_URL}/upload`, formData, {
-        headers: { "Content-Type": "multipart/form-data" },
+        ...getAuthConfig(),
+        headers: {
+          ...getAuthConfig().headers,
+          "Content-Type": "multipart/form-data",
+        },
       });
       if (res.data.success) {
         setProdForm((prev) => ({ ...prev, image: res.data.url }));
@@ -89,7 +93,7 @@ export default function ProductsTab({
 
         if (oldImage) {
           try {
-            await axios.post(`${API_URL}/upload/delete`, { url: oldImage });
+            await axios.post(`${API_URL}/upload/delete`, { url: oldImage }, getAuthConfig());
           } catch (delErr) {
             console.error("Failed to delete old product image:", delErr);
           }
@@ -109,7 +113,7 @@ export default function ProductsTab({
     try {
       setProdForm((prev) => ({ ...prev, image: "" }));
       showToast("Product image removed locally.");
-      await axios.post(`${API_URL}/upload/delete`, { url });
+      await axios.post(`${API_URL}/upload/delete`, { url }, getAuthConfig());
       showToast("Product image deleted!");
     } catch (err) {
       console.error(err);
@@ -173,14 +177,14 @@ export default function ProductsTab({
     try {
       if (editProd) {
         const id = editProd.id || editProd._id;
-        const res = await axios.put(`${API_URL}/products/${id}`, prodForm);
+        const res = await axios.put(`${API_URL}/products/${id}`, prodForm, getAuthConfig());
         if (res.data.success) {
           showToast("Product updated successfully!");
           cancelEditProduct();
           fetchProducts();
         }
       } else {
-        const res = await axios.post(`${API_URL}/products`, prodForm);
+        const res = await axios.post(`${API_URL}/products`, prodForm, getAuthConfig());
         if (res.data.success) {
           showToast("Product created successfully!");
           setProdForm({
@@ -208,7 +212,7 @@ export default function ProductsTab({
   const executeDeleteProduct = async (id: string) => {
     const prodToDelete = products.find((p) => p.id === id || p._id === id);
     try {
-      const res = await axios.delete(`${API_URL}/products/${id}`);
+      const res = await axios.delete(`${API_URL}/products/${id}`, getAuthConfig());
       if (res.data.success) {
         showToast("Product deleted!");
         if (editProd && (editProd.id === id || editProd._id === id))
@@ -219,7 +223,7 @@ export default function ProductsTab({
           try {
             await axios.post(`${API_URL}/upload/delete`, {
               url: prodToDelete.image,
-            });
+            }, getAuthConfig());
           } catch (delErr) {
             console.error("Failed to delete product image", delErr);
           }

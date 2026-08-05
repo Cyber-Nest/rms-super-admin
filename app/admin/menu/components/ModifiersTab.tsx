@@ -14,7 +14,7 @@ import {
 } from "lucide-react";
 import toast from "react-hot-toast";
 import { ModifierGroup, ModifierOption } from "../types";
-import { API_URL, compressImage } from "../utils";
+import { API_URL, compressImage, getAuthConfig } from "../utils";
 
 interface ModifiersTabProps {
   modifiers: ModifierGroup[];
@@ -76,7 +76,11 @@ export default function ModifiersTab({
       formData.append("image", compressedFile);
 
       const res = await axios.post(`${API_URL}/upload`, formData, {
-        headers: { "Content-Type": "multipart/form-data" },
+        ...getAuthConfig(),
+        headers: {
+          ...getAuthConfig().headers,
+          "Content-Type": "multipart/form-data",
+        },
       });
       if (res.data.success) {
         handleModOptionChange(index, "image", res.data.url);
@@ -86,7 +90,7 @@ export default function ModifiersTab({
 
         if (oldImage) {
           try {
-            await axios.post(`${API_URL}/upload/delete`, { url: oldImage });
+            await axios.post(`${API_URL}/upload/delete`, { url: oldImage }, getAuthConfig());
           } catch (delErr) {
             console.error("Failed to delete old option image:", delErr);
           }
@@ -109,7 +113,7 @@ export default function ModifiersTab({
     try {
       handleModOptionChange(index, "image", "");
       showToast("Option image removed locally.");
-      await axios.post(`${API_URL}/upload/delete`, { url });
+      await axios.post(`${API_URL}/upload/delete`, { url }, getAuthConfig());
       showToast("Option image deleted!");
     } catch (err) {
       console.error(err);
@@ -170,7 +174,7 @@ export default function ModifiersTab({
     setModForm({ ...modForm, options: newOptions });
     if (url) {
       try {
-        await axios.post(`${API_URL}/upload/delete`, { url });
+        await axios.post(`${API_URL}/upload/delete`, { url }, getAuthConfig());
       } catch (err) {
         console.error("Failed to delete option image:", err);
       }
@@ -221,14 +225,14 @@ export default function ModifiersTab({
       };
       if (editMod) {
         const id = editMod.id || editMod._id;
-        const res = await axios.put(`${API_URL}/modifiers/${id}`, payload);
+        const res = await axios.put(`${API_URL}/modifiers/${id}`, payload, getAuthConfig());
         if (res.data.success) {
           showToast("Modifier Group updated!");
           cancelEditModifier();
           fetchModifiers();
         }
       } else {
-        const res = await axios.post(`${API_URL}/modifiers`, payload);
+        const res = await axios.post(`${API_URL}/modifiers`, payload, getAuthConfig());
         if (res.data.success) {
           showToast("Modifier Group created!");
           setModForm({
@@ -255,7 +259,7 @@ export default function ModifiersTab({
   const executeDeleteModifier = async (id: string) => {
     const modToDelete = modifiers.find((m) => m.id === id || m._id === id);
     try {
-      const res = await axios.delete(`${API_URL}/modifiers/${id}`);
+      const res = await axios.delete(`${API_URL}/modifiers/${id}`, getAuthConfig());
       if (res.data.success) {
         showToast("Modifier group deleted!");
         if (editMod && (editMod.id === id || editMod._id === id))
@@ -268,7 +272,7 @@ export default function ModifiersTab({
               try {
                 await axios.post(`${API_URL}/upload/delete`, {
                   url: opt.image,
-                });
+                }, getAuthConfig());
               } catch (delErr) {
                 console.error(
                   "Failed to delete modifier option image:",
