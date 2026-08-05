@@ -410,34 +410,34 @@ export default function PromoCodesPage() {
       {/* ── Main Data Grid Table ── */}
       <div className="bg-white border border-neutral-200 rounded-2xl shadow-xs overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse text-xs">
-            <thead className="bg-neutral-900 text-white font-800 uppercase tracking-wider text-[10px]">
+          <table className="w-full text-left border-collapse text-[11px]">
+            <thead className="bg-neutral-900 text-white font-800 uppercase tracking-wider text-[9.5px]">
               <tr>
-                <th className="px-5 py-3.5">Promo Code</th>
-                <th className="px-5 py-3.5">Discount</th>
-                <th className="px-5 py-3.5">Channel Scope</th>
-                <th className="px-5 py-3.5">Category Scope</th>
-                <th className="px-5 py-3.5">Min Purchase</th>
-                <th className="px-5 py-3.5">Validity Period</th>
-                <th className="px-5 py-3.5 text-center">Usage</th>
-                <th className="px-5 py-3.5 text-center">Status</th>
-                <th className="px-5 py-3.5 text-right">Actions</th>
+                <th className="px-4 py-3">Promo Code</th>
+                <th className="px-3.5 py-3">Discount</th>
+                <th className="px-3.5 py-3">Channel Scope</th>
+                <th className="px-3.5 py-3">Category / Branch Scope</th>
+                <th className="px-3.5 py-3">Min Order</th>
+                <th className="px-3.5 py-3">Validity Period</th>
+                <th className="px-3.5 py-3 text-center whitespace-nowrap">Usage</th>
+                <th className="px-3.5 py-3 text-center">Status</th>
+                <th className="px-4 py-3 text-right">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-neutral-100 font-600 text-neutral-700">
               {loading ? (
                 <tr>
                   <td colSpan={9} className="py-12 text-center text-neutral-400 font-700">
-                    <RefreshCw size={20} className="animate-spin mx-auto text-brand-primary mb-2" />
+                    <RefreshCw size={18} className="animate-spin mx-auto text-brand-primary mb-1.5" />
                     <span>Loading promo codes...</span>
                   </td>
                 </tr>
               ) : promos.length === 0 ? (
                 <tr>
                   <td colSpan={9} className="py-16 text-center text-neutral-400 font-700">
-                    <Tag size={32} className="mx-auto text-neutral-300 mb-2" />
-                    <p className="text-neutral-800 font-800 text-sm">No Promo Codes Found</p>
-                    <p className="text-[11px] text-neutral-400 font-500 mt-0.5">Click "Create New Promo" to set up your first coupon code.</p>
+                    <Tag size={28} className="mx-auto text-neutral-300 mb-2" />
+                    <p className="text-neutral-800 font-800 text-xs">No Promo Codes Found</p>
+                    <p className="text-[10.5px] text-neutral-400 font-500 mt-0.5">Click "Create New Promo" to set up your first coupon code.</p>
                   </td>
                 </tr>
               ) : (
@@ -447,13 +447,13 @@ export default function PromoCodesPage() {
                     <tr key={promo._id} className="hover:bg-neutral-50/60 transition-colors border-b border-neutral-100">
                       
                       {/* Code */}
-                      <td className="px-5 py-4">
+                      <td className="px-4 py-3">
                         <div className="space-y-0.5">
-                          <span className="font-mono text-[12px] font-900 text-neutral-900 bg-neutral-100 px-2.5 py-1 rounded-lg border border-neutral-200 tracking-wider">
+                          <span className="font-mono text-[11px] font-900 text-neutral-900 bg-neutral-100 px-2 py-0.5 rounded border border-neutral-200 tracking-wider">
                             {promo.code}
                           </span>
                           {promo.description && (
-                            <p className="text-[10px] text-neutral-400 font-500 truncate max-w-[180px] pt-1">
+                            <p className="text-[9.5px] text-neutral-400 font-500 truncate max-w-[150px] pt-0.5">
                               {promo.description}
                             </p>
                           )}
@@ -461,90 +461,88 @@ export default function PromoCodesPage() {
                       </td>
 
                       {/* Discount */}
-                      <td className="px-5 py-4">
-                        <div className="flex items-center gap-1.5">
-                          <span className="px-2.5 py-1 rounded-lg bg-emerald-50 text-emerald-700 font-900 text-[12px] border border-emerald-200/60 inline-flex items-center gap-1">
+                      <td className="px-3.5 py-3 whitespace-nowrap">
+                        <div className="flex items-center gap-1">
+                          <span className="px-2 py-0.5 rounded bg-emerald-50 text-emerald-700 font-900 text-[11px] border border-emerald-200/60 inline-flex items-center">
                             {promo.discountType === "percentage" ? (
-                              <>
-                                <span>{promo.discountValue}% OFF</span>
-                              </>
+                              <span>{promo.discountValue}% OFF</span>
                             ) : (
-                              <>
-                                <span>${promo.discountValue.toFixed(2)} OFF</span>
-                              </>
+                              <span>${promo.discountValue.toFixed(2)} OFF</span>
                             )}
                           </span>
                           {promo.maxDiscount && (
-                            <span className="text-[9.5px] text-neutral-400 font-600 block">
-                              (Max ${promo.maxDiscount})
+                            <span className="text-[9px] text-neutral-400 font-600">
+                              (Cap ${promo.maxDiscount})
                             </span>
                           )}
                         </div>
                       </td>
 
                       {/* Channel */}
-                      <td className="px-5 py-4">
+                      <td className="px-3.5 py-3 whitespace-nowrap">
                         {promo.applicableChannel === "both" ? (
-                          <span className="px-2.5 py-1 rounded-md text-[9.5px] font-800 tracking-wider border uppercase inline-flex items-center gap-1.5 bg-blue-50 text-blue-700 border-blue-200">
-                            <Globe size={11} />
-                            <span>Both (POS & Online)</span>
+                          <span className="px-2 py-0.5 rounded text-[9px] font-800 tracking-wide border uppercase inline-flex items-center gap-1 bg-blue-50 text-blue-700 border-blue-200/80">
+                            <Globe size={10} />
+                            <span>Both (POS & Web)</span>
                           </span>
                         ) : promo.applicableChannel === "online" ? (
-                          <span className="px-2.5 py-1 rounded-md text-[9.5px] font-800 tracking-wider border uppercase inline-flex items-center gap-1.5 bg-emerald-50 text-emerald-700 border-emerald-200">
-                            <Globe size={11} />
-                            <span>Online Website Only</span>
+                          <span className="px-2 py-0.5 rounded text-[9px] font-800 tracking-wide border uppercase inline-flex items-center gap-1 bg-emerald-50 text-emerald-700 border-emerald-200/80">
+                            <Globe size={10} />
+                            <span>Online Web Only</span>
                           </span>
                         ) : (
-                          <span className="px-2.5 py-1 rounded-md text-[9.5px] font-800 tracking-wider border uppercase inline-flex items-center gap-1.5 bg-purple-50 text-purple-700 border-purple-200">
-                            <Monitor size={11} />
-                            <span>POS System Only</span>
+                          <span className="px-2 py-0.5 rounded text-[9px] font-800 tracking-wide border uppercase inline-flex items-center gap-1 bg-purple-50 text-purple-700 border-purple-200/80">
+                            <Monitor size={10} />
+                            <span>POS Terminal Only</span>
                           </span>
                         )}
                       </td>
 
                       {/* Scope */}
-                      <td className="px-5 py-4">
-                        {promo.applicableScope === "all_categories" ? (
-                          <span className="text-[11px] font-700 text-neutral-600 flex items-center gap-1">
-                            <Layers size={12} className="text-neutral-400" />
-                            <span>All Menu Items</span>
-                          </span>
-                        ) : (
-                          <div className="space-y-0.5">
-                            <span className="text-[10px] font-800 text-amber-700 bg-amber-50 px-2 py-0.5 rounded border border-amber-200 inline-block uppercase">
-                              Specific Categories ({promo.categoryIds?.length || 0})
+                      <td className="px-3.5 py-3">
+                        <div className="space-y-1">
+                          {promo.applicableScope === "all_categories" ? (
+                            <span className="text-[10px] font-700 text-neutral-600 inline-flex items-center gap-1">
+                              <Layers size={11} className="text-neutral-400" />
+                              <span>All Menu Items</span>
                             </span>
-                            {promo.categoryIds && promo.categoryIds.length > 0 && (
-                              <p className="text-[9.5px] text-neutral-400 truncate max-w-[140px]">
-                                {promo.categoryIds.join(", ")}
-                              </p>
-                            )}
-                          </div>
-                        )}
+                          ) : (
+                            <div>
+                              <span className="text-[9px] font-800 text-amber-700 bg-amber-50 px-1.5 py-0.5 rounded border border-amber-200 uppercase inline-block">
+                                Specific Categories ({promo.categoryIds?.length || 0})
+                              </span>
+                              {promo.categoryIds && promo.categoryIds.length > 0 && (
+                                <p className="text-[9px] text-neutral-400 truncate max-w-[130px] mt-0.5">
+                                  {promo.categoryIds.join(", ")}
+                                </p>
+                              )}
+                            </div>
+                          )}
 
-                        {promo.applicableBranchScope === "specific_branches" && (
-                          <div className="pt-1">
-                            <span className="text-[9px] font-800 text-sky-700 bg-sky-50 px-1.5 py-0.5 rounded border border-sky-200 inline-block uppercase">
-                              Branch Restricted ({promo.branchIds?.length || 0})
-                            </span>
-                          </div>
-                        )}
+                          {promo.applicableBranchScope === "specific_branches" && (
+                            <div>
+                              <span className="text-[9px] font-800 text-sky-700 bg-sky-50 px-1.5 py-0.5 rounded border border-sky-200 uppercase inline-block">
+                                Branch Restricted ({promo.branchIds?.length || 0})
+                              </span>
+                            </div>
+                          )}
+                        </div>
                       </td>
 
                       {/* Min Purchase */}
-                      <td className="px-5 py-4 font-mono font-700 text-neutral-800">
+                      <td className="px-3.5 py-3 font-mono font-700 text-neutral-800 whitespace-nowrap">
                         {promo.minOrderAmount > 0 ? `$${promo.minOrderAmount.toFixed(2)}` : "No Min"}
                       </td>
 
                       {/* Validity Period */}
-                      <td className="px-5 py-4">
+                      <td className="px-3.5 py-3 whitespace-nowrap">
                         <div className="space-y-0.5">
-                          <p className={`text-[11px] font-700 flex items-center gap-1 ${isExpired ? "text-red-500" : "text-neutral-700"}`}>
-                            <Calendar size={11} />
+                          <p className={`text-[10.5px] font-700 flex items-center gap-1 ${isExpired ? "text-red-500" : "text-neutral-700"}`}>
+                            <Calendar size={10} />
                             <span>Expires: {formatDate(promo.expiresAt)}</span>
                           </p>
                           {promo.startDate && (
-                            <p className="text-[9.5px] text-neutral-400 pl-4">
+                            <p className="text-[9px] text-neutral-400 pl-3.5">
                               Starts: {formatDate(promo.startDate)}
                             </p>
                           )}
@@ -552,17 +550,17 @@ export default function PromoCodesPage() {
                       </td>
 
                       {/* Usage */}
-                      <td className="px-5 py-4 text-center">
-                        <span className="font-mono text-[11.5px] font-800 text-neutral-900 bg-neutral-100 px-2.5 py-1 rounded-lg border border-neutral-200">
+                      <td className="px-3.5 py-3 text-center whitespace-nowrap">
+                        <span className="font-mono text-[10.5px] font-800 text-neutral-900 bg-neutral-100 px-2 py-0.5 rounded border border-neutral-200 inline-block">
                           {promo.usedCount} / {promo.usageLimit !== null ? promo.usageLimit : "∞"}
                         </span>
                       </td>
 
                       {/* Status */}
-                      <td className="px-5 py-4 text-center">
+                      <td className="px-3.5 py-3 text-center whitespace-nowrap">
                         <button
                           onClick={() => handleToggleStatus(promo)}
-                          className={`px-3 py-1 rounded-full text-[10px] font-800 uppercase tracking-wider inline-flex items-center gap-1.5 transition-all cursor-pointer border ${
+                          className={`px-2.5 py-0.5 rounded-full text-[9.5px] font-800 uppercase tracking-wider inline-flex items-center gap-1 transition-all cursor-pointer border ${
                             promo.isActive && !isExpired
                               ? "bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100"
                               : "bg-red-50 text-red-700 border-red-200 hover:bg-red-100"
@@ -574,8 +572,8 @@ export default function PromoCodesPage() {
                       </td>
 
                       {/* Actions */}
-                      <td className="px-5 py-4 text-right">
-                        <div className="flex items-center justify-end gap-1.5">
+                      <td className="px-4 py-3 text-right whitespace-nowrap">
+                        <div className="flex items-center justify-end gap-1">
                           <button
                             onClick={() => handleOpenEdit(promo)}
                             className="p-1.5 rounded-lg bg-neutral-50 hover:bg-neutral-100 text-neutral-600 hover:text-neutral-900 border border-neutral-200 transition-all cursor-pointer"
