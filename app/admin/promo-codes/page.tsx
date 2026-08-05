@@ -84,11 +84,21 @@ export default function PromoCodesPage() {
 
   const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
 
+  const getAuthConfig = () => {
+    if (typeof window === "undefined") return { withCredentials: true };
+    const token = localStorage.getItem("rms_superadmin_token");
+    return {
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+      withCredentials: true,
+    };
+  };
+
   // Fetch Promo Codes
   const fetchPromos = async () => {
     setLoading(true);
     try {
       const res = await axios.get(`${API_URL}/promos`, {
+        ...getAuthConfig(),
         params: {
           search,
           channel: channelFilter,
@@ -108,7 +118,7 @@ export default function PromoCodesPage() {
   // Fetch Categories for selection
   const fetchCategories = async () => {
     try {
-      const res = await axios.get(`${API_URL}/menu/categories`);
+      const res = await axios.get(`${API_URL}/menu/categories`, getAuthConfig());
       if (res.data.success) {
         setCategoriesList(res.data.data || []);
       }
@@ -118,18 +128,10 @@ export default function PromoCodesPage() {
   // Fetch Branches for selection
   const fetchBranches = async () => {
     try {
-      const token = typeof window !== "undefined" ? localStorage.getItem("rms_superadmin_token") : null;
       let res;
-      if (token) {
-        try {
-          res = await axios.get(`${API_URL}/branches?isActive=true&minimal=true`, {
-            headers: { Authorization: `Bearer ${token}` },
-            withCredentials: true,
-          });
-        } catch (err) {
-          res = await axios.get(`${API_URL}/branches/public`);
-        }
-      } else {
+      try {
+        res = await axios.get(`${API_URL}/branches?isActive=true&minimal=true`, getAuthConfig());
+      } catch (err) {
         res = await axios.get(`${API_URL}/branches/public`);
       }
 
@@ -229,14 +231,14 @@ export default function PromoCodesPage() {
       };
 
       if (editingPromo) {
-        const res = await axios.patch(`${API_URL}/promos/${editingPromo._id}`, payload);
+        const res = await axios.patch(`${API_URL}/promos/${editingPromo._id}`, payload, getAuthConfig());
         if (res.data.success) {
           toast.success("Promo code updated successfully!");
           setIsModalOpen(false);
           fetchPromos();
         }
       } else {
-        const res = await axios.post(`${API_URL}/promos`, payload);
+        const res = await axios.post(`${API_URL}/promos`, payload, getAuthConfig());
         if (res.data.success) {
           toast.success("New promo code created successfully!");
           setIsModalOpen(false);
@@ -253,7 +255,7 @@ export default function PromoCodesPage() {
   // Toggle Active Status
   const handleToggleStatus = async (promo: PromoCode) => {
     try {
-      const res = await axios.patch(`${API_URL}/promos/${promo._id}/toggle-status`);
+      const res = await axios.patch(`${API_URL}/promos/${promo._id}/toggle-status`, {}, getAuthConfig());
       if (res.data.success) {
         toast.success(`Promo code '${promo.code}' is now ${res.data.data.isActive ? "Active" : "Inactive"}`);
         fetchPromos();
@@ -282,7 +284,7 @@ export default function PromoCodesPage() {
               onClick={async () => {
                 toast.dismiss(t.id);
                 try {
-                  const res = await axios.delete(`${API_URL}/promos/${promo._id}`);
+                  const res = await axios.delete(`${API_URL}/promos/${promo._id}`, getAuthConfig());
                   if (res.data.success) {
                     toast.success("Promo code deleted!");
                     fetchPromos();

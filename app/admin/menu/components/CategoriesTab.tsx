@@ -10,7 +10,7 @@ import {
 } from "lucide-react";
 import toast from "react-hot-toast";
 import { Category } from "../types";
-import { API_URL, compressImage } from "../utils";
+import { API_URL, compressImage, getAuthConfig } from "../utils";
 import BranchVisibilityModal from "./BranchVisibilityModal";
 
 interface CategoriesTabProps {
@@ -62,7 +62,11 @@ export default function CategoriesTab({
       formData.append("image", compressedFile);
 
       const res = await axios.post(`${API_URL}/upload`, formData, {
-        headers: { "Content-Type": "multipart/form-data" },
+        ...getAuthConfig(),
+        headers: {
+          ...getAuthConfig().headers,
+          "Content-Type": "multipart/form-data",
+        },
       });
       if (res.data.success) {
         setCatForm((prev) => ({ ...prev, image: res.data.url }));
@@ -70,7 +74,7 @@ export default function CategoriesTab({
 
         if (oldImage) {
           try {
-            await axios.post(`${API_URL}/upload/delete`, { url: oldImage });
+            await axios.post(`${API_URL}/upload/delete`, { url: oldImage }, getAuthConfig());
           } catch (delErr) {
             console.error("Failed to delete old category image:", delErr);
           }
@@ -93,7 +97,7 @@ export default function CategoriesTab({
     try {
       setCatForm((prev) => ({ ...prev, image: "" }));
       showToast("Category image removed locally.");
-      await axios.post(`${API_URL}/upload/delete`, { url });
+      await axios.post(`${API_URL}/upload/delete`, { url }, getAuthConfig());
       showToast("Category image deleted!");
     } catch (err) {
       console.error(err);
@@ -135,14 +139,14 @@ export default function CategoriesTab({
     try {
       if (editCat) {
         const id = editCat.id || editCat._id;
-        const res = await axios.put(`${API_URL}/categories/${id}`, catForm);
+        const res = await axios.put(`${API_URL}/categories/${id}`, catForm, getAuthConfig());
         if (res.data.success) {
           showToast("Category updated successfully!");
           cancelEditCategory();
           fetchCategories();
         }
       } else {
-        const res = await axios.post(`${API_URL}/categories`, catForm);
+        const res = await axios.post(`${API_URL}/categories`, catForm, getAuthConfig());
         if (res.data.success) {
           showToast("Category created successfully!");
           setCatForm({
@@ -169,7 +173,7 @@ export default function CategoriesTab({
   const executeDeleteCategory = async (id: string) => {
     const catToDelete = categories.find((c) => c.id === id || c._id === id);
     try {
-      const res = await axios.delete(`${API_URL}/categories/${id}`);
+      const res = await axios.delete(`${API_URL}/categories/${id}`, getAuthConfig());
       if (res.data.success) {
         showToast("Category deleted!");
         if (editCat && (editCat.id === id || editCat._id === id))
@@ -180,7 +184,7 @@ export default function CategoriesTab({
           try {
             await axios.post(`${API_URL}/upload/delete`, {
               url: catToDelete.image,
-            });
+            }, getAuthConfig());
           } catch (delErr) {
             console.error("Failed to delete category image", delErr);
           }
