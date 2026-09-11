@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import axios from "axios";
 import {
   Layers,
@@ -11,6 +11,8 @@ import {
   Plus,
   SlidersHorizontal,
   Settings2,
+  Search,
+  Copy,
 } from "lucide-react";
 import toast from "react-hot-toast";
 import { ModifierGroup, ModifierOption } from "../types";
@@ -28,6 +30,7 @@ export default function ModifiersTab({
   showToast,
 }: ModifiersTabProps) {
   const [loading, setLoading] = useState(false);
+  const [duplicatingId, setDuplicatingId] = useState<string | null>(null);
   const [uploadingOptionIdx, setUploadingOptionIdx] = useState<number | null>(
     null,
   );
@@ -35,6 +38,69 @@ export default function ModifiersTab({
     null,
   );
   const [editMod, setEditMod] = useState<ModifierGroup | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
+
+  // Group & sort modifiers so copies always appear directly underneath their original group
+  const sortedModifiers = useMemo(() => {
+    const list = [...modifiers];
+    const getBase = (n: string) =>
+      n
+        .replace(/\s*\([^)]*copy[^)]*\)/gi, "")
+        .trim()
+        .toLowerCase();
+
+    const result: ModifierGroup[] = [];
+    const addedIds = new Set<string>();
+
+    // 1st pass: Original items first, with their respective copies placed directly below them
+    list.forEach((group) => {
+      const gId = (group.id || group._id) as string;
+      if (addedIds.has(gId)) return;
+
+      const isCopy = /\([^)]*copy[^)]*\)/i.test(group.name);
+      if (!isCopy) {
+        result.push(group);
+        addedIds.add(gId);
+
+        // Find all copies of this specific original group
+        const base = getBase(group.name);
+        list.forEach((other) => {
+          const oId = (other.id || other._id) as string;
+          if (
+            !addedIds.has(oId) &&
+            /\([^)]*copy[^)]*\)/i.test(other.name) &&
+            getBase(other.name) === base
+          ) {
+            result.push(other);
+            addedIds.add(oId);
+          }
+        });
+      }
+    });
+
+    // 2nd pass: Any remaining standalone copy groups (whose original was deleted)
+    list.forEach((group) => {
+      const gId = (group.id || group._id) as string;
+      if (!addedIds.has(gId)) {
+        result.push(group);
+        addedIds.add(gId);
+      }
+    });
+
+    return result;
+  }, [modifiers]);
+
+  const filteredModifiers = useMemo(() => {
+    if (!searchQuery.trim()) return sortedModifiers;
+    const q = searchQuery.toLowerCase().trim();
+    return sortedModifiers.filter((group) => {
+      const groupNameMatches = group.name.toLowerCase().includes(q);
+      const optionMatches = group.options?.some((opt) =>
+        opt.name.toLowerCase().includes(q),
+      );
+      return groupNameMatches || optionMatches;
+    });
+  }, [sortedModifiers, searchQuery]);
 
   const [modForm, setModForm] = useState<{
     name: string;
@@ -140,6 +206,48 @@ export default function ModifiersTab({
           ) || [],
       })),
     });
+  };
+
+  const duplicateModifierGroup = async (group: ModifierGroup) => {
+    const groupId = (group.id || group._id) as string;
+    setDuplicatingId(groupId);
+    try {
+      const payload = {
+        name: `${group.name} (Copy)`,
+        required: group.required,
+        minSelection: group.minSelection,
+        maxSelection: group.maxSelection,
+        displayType: group.displayType,
+        options: group.options.map((o) => ({
+          name: o.name,
+          price: o.price,
+          isDefault: o.isDefault,
+          image: o.image || "",
+          modifierGroups:
+            o.modifierGroups?.map((g: any) =>
+              typeof g === "string" ? g : g.id || g._id,
+            ) || [],
+        })),
+      };
+
+      const res = await axios.post(
+        `${API_URL}/modifiers`,
+        payload,
+        getAuthConfig(),
+      );
+      if (res.data.success) {
+        showToast(`Duplicated "${group.name}" as "${group.name} (Copy)"!`);
+        fetchModifiers();
+      }
+    } catch (err: any) {
+      console.error(err);
+      showToast(
+        err.response?.data?.message || "Failed to duplicate modifier group",
+        "error",
+      );
+    } finally {
+      setDuplicatingId(null);
+    }
   };
 
   const cancelEditModifier = () => {
@@ -676,85 +784,125 @@ export default function ModifiersTab({
               Modifier Groups
             </h3>
           </div>
-          <span className="text-[9px] bg-neutral-100 text-neutral-600 px-2 py-0.5 rounded-full font-700">
-            {modifiers.length} Groups
-          </span>
+          <div className="flex items-center gap-2.5">
+            <div className="relative">
+              <Search
+                size={13}
+                className="absolute left-2.5 top-1/2 -translate-y-1/2 text-neutral-400"
+              />
+              <input
+                type="text"
+                placeholder="Search modifiers..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-8 pr-3 py-1 bg-[#FAFAF9] border border-neutral-200 rounded-xl text-[11px] text-neutral-800 placeholder:text-neutral-400 focus:outline-none focus:border-brand-primary w-36 sm:w-48 transition-all"
+              />
+            </div>
+            <span className="text-[9px] bg-neutral-100 text-neutral-600 px-2 py-1 rounded-full font-700">
+              {filteredModifiers.length} Groups
+            </span>
+          </div>
         </div>
 
-        {modifiers.length === 0 ? (
+        {filteredModifiers.length === 0 ? (
           <div className="text-center py-12 text-neutral-400 italic text-[11px]">
-            No modifier groups configured.
+            {searchQuery ? `No modifier groups found for "${searchQuery}".` : "No modifier groups configured."}
           </div>
         ) : (
           <div className="space-y-3.5">
-            {modifiers.map((group) => (
-              <div
-                key={group.id || group._id}
-                className="p-4 border border-neutral-200 rounded-xl bg-[#FAFAF9] flex justify-between items-start"
-              >
-                <div className="space-y-1.5 flex-1 pr-6">
-                  <div className="flex items-center gap-2.5 flex-wrap">
-                    <h4 className="text-[12px] font-700 text-neutral-900 leading-tight">
-                      {group.name}
-                    </h4>
-                    <span className="bg-orange-50 text-brand-primary text-[8px] font-700 px-1.5 py-0.5 rounded">
-                      UI: {group.displayType}
-                    </span>
-                    {group.required && (
-                      <span className="bg-red-50 text-red-500 text-[8px] font-700 px-1.5 py-0.5 rounded">
-                        Mandatory
+            {filteredModifiers.map((group) => {
+              const isCopyCard = /\([^)]*copy[^)]*\)/i.test(group.name);
+              const groupId = (group.id || group._id) as string;
+              return (
+                <div
+                  key={groupId}
+                  className={`p-4 border rounded-xl flex justify-between items-start transition-all ${
+                    isCopyCard
+                      ? "ml-3 sm:ml-5 border-blue-200 border-l-4 border-l-blue-500 bg-blue-50/20 shadow-xs"
+                      : "border-neutral-200 bg-[#FAFAF9]"
+                  }`}
+                >
+                  <div className="space-y-1.5 flex-1 pr-6">
+                    <div className="flex items-center gap-2.5 flex-wrap">
+                      <h4 className="text-[12px] font-700 text-neutral-900 leading-tight">
+                        {group.name}
+                      </h4>
+                      {isCopyCard && (
+                        <span className="bg-blue-100 text-blue-700 border border-blue-200 text-[8px] font-800 px-1.5 py-0.5 rounded flex items-center gap-1">
+                          <Copy size={9} /> Copy
+                        </span>
+                      )}
+                      <span className="bg-orange-50 text-brand-primary text-[8px] font-700 px-1.5 py-0.5 rounded">
+                        UI: {group.displayType}
                       </span>
-                    )}
-                    <span className="text-neutral-400 text-[9px]">
-                      Limits: {group.minSelection}-{group.maxSelection}
-                    </span>
-                  </div>
+                      {group.required && (
+                        <span className="bg-red-50 text-red-500 text-[8px] font-700 px-1.5 py-0.5 rounded">
+                          Mandatory
+                        </span>
+                      )}
+                      <span className="text-neutral-400 text-[9px]">
+                        Limits: {group.minSelection}-{group.maxSelection}
+                      </span>
+                    </div>
 
-                  <div className="flex flex-wrap gap-2.5 pt-2">
-                    {group.options.map((opt) => (
-                      <span
-                        key={opt.id || opt._id}
-                        className={`text-[9.5px] pl-1.5 pr-2.5 py-1 rounded-xl border flex items-center gap-2 ${
-                          opt.isDefault
-                            ? "border-brand-primary bg-orange-50 text-brand-primary font-600"
-                            : "border-neutral-200 bg-white text-neutral-600"
-                        }`}
-                      >
-                        {opt.image && (
-                          <img
-                            src={opt.image}
-                            alt={opt.name}
-                            className="w-5.5 h-5.5 rounded object-cover border border-neutral-200"
-                          />
-                        )}
-                        <span>{opt.name}</span>
-                        {opt.price > 0 && (
-                          <span className="font-700 text-[8px] opacity-75">
-                            (+${opt.price.toFixed(2)})
-                          </span>
-                        )}
-                      </span>
-                    ))}
+                    <div className="flex flex-wrap gap-2.5 pt-2">
+                      {group.options.map((opt) => (
+                        <span
+                          key={opt.id || opt._id}
+                          className={`text-[9.5px] pl-1.5 pr-2.5 py-1 rounded-xl border flex items-center gap-2 ${
+                            opt.isDefault
+                              ? "border-brand-primary bg-orange-50 text-brand-primary font-600"
+                              : "border-neutral-200 bg-white text-neutral-600"
+                          }`}
+                        >
+                          {opt.image && (
+                            <img
+                              src={opt.image}
+                              alt={opt.name}
+                              className="w-5.5 h-5.5 rounded object-cover border border-neutral-200"
+                            />
+                          )}
+                          <span>{opt.name}</span>
+                          {opt.price > 0 && (
+                            <span className="font-700 text-[8px] opacity-75">
+                              (+${opt.price.toFixed(2)})
+                            </span>
+                          )}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => duplicateModifierGroup(group)}
+                      disabled={duplicatingId === groupId}
+                      title="Duplicate Modifier Group"
+                      className="w-7 h-7 flex items-center justify-center rounded-lg bg-blue-50 text-blue-600 hover:bg-blue-100 transition-all cursor-pointer mt-1 disabled:opacity-50"
+                    >
+                      {duplicatingId === groupId ? (
+                        <Loader2 size={12} className="animate-spin text-blue-600" />
+                      ) : (
+                        <Copy size={12} />
+                      )}
+                    </button>
+                    <button
+                      onClick={() => startEditModifier(group)}
+                      className="w-7 h-7 flex items-center justify-center rounded-lg bg-orange-50 text-brand-primary hover:bg-orange-100 transition-all cursor-pointer mt-1"
+                      title="Edit Modifier Group"
+                    >
+                      <Edit size={12} />
+                    </button>
+                    <button
+                      onClick={() => handleDeleteModifier(groupId)}
+                      className="w-7 h-7 flex items-center justify-center rounded-lg bg-red-50 text-red-500 hover:bg-red-100 transition-all cursor-pointer mt-1"
+                      title="Delete Modifier Group"
+                    >
+                      <Trash size={12} />
+                    </button>
                   </div>
                 </div>
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={() => startEditModifier(group)}
-                    className="w-7 h-7 flex items-center justify-center rounded-lg bg-orange-50 text-brand-primary hover:bg-orange-100 transition-all cursor-pointer mt-1"
-                  >
-                    <Edit size={12} />
-                  </button>
-                  <button
-                    onClick={() =>
-                      handleDeleteModifier((group.id || group._id) as string)
-                    }
-                    className="w-7 h-7 flex items-center justify-center rounded-lg bg-red-50 text-red-500 hover:bg-red-100 transition-all cursor-pointer mt-1"
-                  >
-                    <Trash size={12} />
-                  </button>
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>
