@@ -45,5 +45,6 @@ export interface Product {
   productId?: string;
   isActive?: boolean;
   kitchenLabel?: "chicken" | "pizza";
+  displayOrder?: number;
   disabledBranches?: string[];
 }

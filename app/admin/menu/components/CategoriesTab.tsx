@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import axios from "axios";
 import {
   FolderPlus,
@@ -7,6 +7,7 @@ import {
   Image as ImageIcon,
   Loader2,
   Store,
+  Search,
 } from "lucide-react";
 import toast from "react-hot-toast";
 import { Category } from "../types";
@@ -27,11 +28,23 @@ export default function CategoriesTab({
   const [loading, setLoading] = useState(false);
   const [uploadingCategory, setUploadingCategory] = useState(false);
   const [editCat, setEditCat] = useState<Category | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
   const [visibilityTarget, setVisibilityTarget] = useState<{
     id: string;
     name: string;
     disabledBranches: string[];
   } | null>(null);
+
+  const filteredCategories = useMemo(() => {
+    if (!searchQuery.trim()) return categories;
+    const q = searchQuery.toLowerCase().trim();
+    return categories.filter(
+      (cat) =>
+        cat.name.toLowerCase().includes(q) ||
+        (cat.description && cat.description.toLowerCase().includes(q)) ||
+        (cat.slug && cat.slug.toLowerCase().includes(q)),
+    );
+  }, [categories, searchQuery]);
 
   const [catForm, setCatForm] = useState<Category>({
     name: "",
@@ -422,18 +435,33 @@ export default function CategoriesTab({
               Category List
             </h3>
           </div>
-          <span className="text-[9px] bg-neutral-100 text-neutral-600 px-2 py-0.5 rounded-full font-700">
-            {categories.length} Categories
-          </span>
+          <div className="flex items-center gap-2.5">
+            <div className="relative">
+              <Search
+                size={13}
+                className="absolute left-2.5 top-1/2 -translate-y-1/2 text-neutral-400"
+              />
+              <input
+                type="text"
+                placeholder="Search categories..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-8 pr-3 py-1 bg-[#FAFAF9] border border-neutral-200 rounded-xl text-[11px] text-neutral-800 placeholder:text-neutral-400 focus:outline-none focus:border-brand-primary w-36 sm:w-48 transition-all"
+              />
+            </div>
+            <span className="text-[9px] bg-neutral-100 text-neutral-600 px-2 py-1 rounded-full font-700">
+              {filteredCategories.length} Categories
+            </span>
+          </div>
         </div>
 
-        {categories.length === 0 ? (
+        {filteredCategories.length === 0 ? (
           <div className="text-center py-12 text-neutral-400 italic text-[11px]">
-            No categories found. Add your first category.
+            {searchQuery ? `No categories found for "${searchQuery}".` : "No categories found. Add your first category."}
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
-            {categories.map((cat) => (
+            {filteredCategories.map((cat) => (
               <div
                 key={cat.id || cat._id}
                 className="p-4 border border-neutral-200 rounded-xl bg-[#FAFAF9] flex gap-3 shadow-xs"

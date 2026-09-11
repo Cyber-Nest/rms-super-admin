@@ -1,3 +1,5 @@
+'use client';
+
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 import {
@@ -9,6 +11,7 @@ import {
   Image as ImageIcon,
   Loader2,
   Store,
+  Search,
 } from "lucide-react";
 import toast from "react-hot-toast";
 import { Product, Category, ModifierGroup } from "../types";
@@ -33,6 +36,7 @@ export default function ProductsTab({
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [editProd, setEditProd] = useState<Product | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
   const [visibilityTarget, setVisibilityTarget] = useState<{
     id: string;
     name: string;
@@ -50,6 +54,7 @@ export default function ProductsTab({
     badge: null,
     isActive: true,
     kitchenLabel: "chicken",
+    displayOrder: 0,
   });
 
   // Sync default category
@@ -139,6 +144,7 @@ export default function ProductsTab({
       badge: prod.badge || null,
       isActive: prod.isActive !== false,
       kitchenLabel: prod.kitchenLabel || "chicken",
+      displayOrder: prod.displayOrder ?? 0,
     });
   };
 
@@ -155,6 +161,7 @@ export default function ProductsTab({
       badge: null,
       isActive: true,
       kitchenLabel: "chicken",
+      displayOrder: 0,
     });
   };
 
@@ -270,6 +277,30 @@ export default function ProductsTab({
     prodForm.price <= 0 ||
     !prodForm.description.trim() ||
     !prodForm.image.trim();
+
+  const sortedProducts = React.useMemo(() => {
+    let list = products;
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase().trim();
+      list = products.filter(
+        (p) =>
+          p.name.toLowerCase().includes(q) ||
+          (p.description && p.description.toLowerCase().includes(q)) ||
+          (p.productId && p.productId.toLowerCase().includes(q)) ||
+          (typeof p.categoryId === "object" &&
+            p.categoryId?.name?.toLowerCase().includes(q)),
+      );
+    }
+
+    return [...list].sort((a, b) => {
+      const orderA = a.displayOrder || 0;
+      const orderB = b.displayOrder || 0;
+      if (orderA > 0 && orderB > 0) return orderA - orderB;
+      if (orderA > 0 && orderB === 0) return -1;
+      if (orderA === 0 && orderB > 0) return 1;
+      return a.name.localeCompare(b.name);
+    });
+  }, [products, searchQuery]);
 
   return (
     <>
@@ -417,7 +448,7 @@ export default function ProductsTab({
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-3.5">
+            <div className="grid grid-cols-3 gap-2.5">
               <div>
                 <label className="block text-[9px] font-700 text-neutral-400 uppercase tracking-wider mb-1.5">
                   Item Type
@@ -430,11 +461,29 @@ export default function ProductsTab({
                       itemType: e.target.value as any,
                     })
                   }
-                  className="w-full bg-[#FAFAF9] border border-neutral-200 rounded-xl px-2.5 py-2.5 text-[11px] focus:outline-none"
+                  className="w-full bg-[#FAFAF9] border border-neutral-200 rounded-xl px-2 py-2.5 text-[11px] focus:outline-none"
                 >
-                  <option value="simple">Simple Item</option>
-                  <option value="combo">Combo Meal</option>
+                  <option value="simple">Simple</option>
+                  <option value="combo">Combo</option>
                 </select>
+              </div>
+              <div>
+                <label className="block text-[9px] font-700 text-neutral-400 uppercase tracking-wider mb-1.5">
+                  Display Order
+                </label>
+                <input
+                  type="number"
+                  min="0"
+                  placeholder="e.g. 1"
+                  value={prodForm.displayOrder || 0}
+                  onChange={(e) =>
+                    setProdForm({
+                      ...prodForm,
+                      displayOrder: parseInt(e.target.value) || 0,
+                    })
+                  }
+                  className="w-full bg-[#FAFAF9] border border-neutral-200 rounded-xl px-2.5 py-2.5 text-[11px] focus:outline-none"
+                />
               </div>
               <div>
                 <label className="block text-[9px] font-700 text-neutral-400 uppercase tracking-wider mb-1.5">
@@ -450,7 +499,7 @@ export default function ProductsTab({
                         : e.target.value) as any,
                     })
                   }
-                  className="w-full bg-[#FAFAF9] border border-neutral-200 rounded-xl px-2.5 py-2.5 text-[11px] focus:outline-none"
+                  className="w-full bg-[#FAFAF9] border border-neutral-200 rounded-xl px-2 py-2.5 text-[11px] focus:outline-none"
                 >
                   <option value="">None</option>
                   <option value="Popular">Popular</option>
@@ -604,18 +653,33 @@ export default function ProductsTab({
               Products List
             </h3>
           </div>
-          <span className="text-[9px] bg-neutral-100 text-neutral-600 px-2 py-0.5 rounded-full font-700">
-            {products.length} Products
-          </span>
+          <div className="flex items-center gap-2.5">
+            <div className="relative">
+              <Search
+                size={13}
+                className="absolute left-2.5 top-1/2 -translate-y-1/2 text-neutral-400"
+              />
+              <input
+                type="text"
+                placeholder="Search products..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-8 pr-3 py-1 bg-[#FAFAF9] border border-neutral-200 rounded-xl text-[11px] text-neutral-800 placeholder:text-neutral-400 focus:outline-none focus:border-brand-primary w-36 sm:w-48 transition-all"
+              />
+            </div>
+            <span className="text-[9px] bg-neutral-100 text-neutral-600 px-2 py-1 rounded-full font-700">
+              {sortedProducts.length} Products
+            </span>
+          </div>
         </div>
 
-        {products.length === 0 ? (
+        {sortedProducts.length === 0 ? (
           <div className="text-center py-12 text-neutral-400 italic text-[11px]">
-            No products found.
+            {searchQuery ? `No products found for "${searchQuery}".` : "No products found."}
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
-            {products.map((prod) => (
+            {sortedProducts.map((prod) => (
               <div
                 key={prod.id || prod._id}
                 className="p-4 border border-neutral-200 rounded-xl bg-[#FAFAF9] flex gap-3 shadow-xs"
@@ -646,6 +710,9 @@ export default function ProductsTab({
                     </div>
 
                     <div className="flex items-center gap-1.5 flex-wrap mt-1">
+                      <span className="bg-[#FEF3C7] text-[#92400E] text-[7.5px] font-800 px-1 py-0.2 rounded uppercase border border-[#FDE68A]">
+                        Order: {prod.displayOrder ?? 0}
+                      </span>
                       <span className="bg-neutral-200 text-neutral-700 text-[7.5px] font-700 px-1 py-0.2 rounded uppercase">
                         {prod.categoryId?.name || "Uncategorized"}
                       </span>

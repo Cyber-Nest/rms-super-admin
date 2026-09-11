@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import axios from "axios";
 import {
   Layers,
@@ -11,6 +11,7 @@ import {
   Plus,
   SlidersHorizontal,
   Settings2,
+  Search,
 } from "lucide-react";
 import toast from "react-hot-toast";
 import { ModifierGroup, ModifierOption } from "../types";
@@ -35,6 +36,19 @@ export default function ModifiersTab({
     null,
   );
   const [editMod, setEditMod] = useState<ModifierGroup | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
+
+  const filteredModifiers = useMemo(() => {
+    if (!searchQuery.trim()) return modifiers;
+    const q = searchQuery.toLowerCase().trim();
+    return modifiers.filter((group) => {
+      const groupNameMatches = group.name.toLowerCase().includes(q);
+      const optionMatches = group.options?.some((opt) =>
+        opt.name.toLowerCase().includes(q),
+      );
+      return groupNameMatches || optionMatches;
+    });
+  }, [modifiers, searchQuery]);
 
   const [modForm, setModForm] = useState<{
     name: string;
@@ -676,18 +690,33 @@ export default function ModifiersTab({
               Modifier Groups
             </h3>
           </div>
-          <span className="text-[9px] bg-neutral-100 text-neutral-600 px-2 py-0.5 rounded-full font-700">
-            {modifiers.length} Groups
-          </span>
+          <div className="flex items-center gap-2.5">
+            <div className="relative">
+              <Search
+                size={13}
+                className="absolute left-2.5 top-1/2 -translate-y-1/2 text-neutral-400"
+              />
+              <input
+                type="text"
+                placeholder="Search modifiers..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-8 pr-3 py-1 bg-[#FAFAF9] border border-neutral-200 rounded-xl text-[11px] text-neutral-800 placeholder:text-neutral-400 focus:outline-none focus:border-brand-primary w-36 sm:w-48 transition-all"
+              />
+            </div>
+            <span className="text-[9px] bg-neutral-100 text-neutral-600 px-2 py-1 rounded-full font-700">
+              {filteredModifiers.length} Groups
+            </span>
+          </div>
         </div>
 
-        {modifiers.length === 0 ? (
+        {filteredModifiers.length === 0 ? (
           <div className="text-center py-12 text-neutral-400 italic text-[11px]">
-            No modifier groups configured.
+            {searchQuery ? `No modifier groups found for "${searchQuery}".` : "No modifier groups configured."}
           </div>
         ) : (
           <div className="space-y-3.5">
-            {modifiers.map((group) => (
+            {filteredModifiers.map((group) => (
               <div
                 key={group.id || group._id}
                 className="p-4 border border-neutral-200 rounded-xl bg-[#FAFAF9] flex justify-between items-start"
