@@ -444,7 +444,8 @@ export default function PromoCodesPage() {
                 </tr>
               ) : (
                 promos.map((promo) => {
-                  const isExpired = promo.expiresAt && new Date() > new Date(promo.expiresAt);
+                  const nowAlberta = new Date(new Date().toLocaleString("en-US", { timeZone: "America/Edmonton" }));
+                  const isExpired = promo.expiresAt && nowAlberta > new Date(promo.expiresAt);
                   return (
                     <tr key={promo._id} className="hover:bg-neutral-50/60 transition-colors border-b border-neutral-100">
                       
