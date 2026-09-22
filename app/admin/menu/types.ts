@@ -27,7 +27,7 @@ export interface ModifierGroup {
   required: boolean;
   minSelection: number;
   maxSelection: number;
-  displayType: "radio" | "checkbox" | "card";
+  displayType: "radio" | "checkbox" | "card" | "counter";
   options: ModifierOption[];
 }
 
