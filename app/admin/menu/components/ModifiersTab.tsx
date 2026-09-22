@@ -13,6 +13,9 @@ import {
   Settings2,
   Search,
   Copy,
+  CircleDot,
+  CheckSquare,
+  Calculator,
 } from "lucide-react";
 import toast from "react-hot-toast";
 import { ModifierGroup, ModifierOption } from "../types";
@@ -39,6 +42,7 @@ export default function ModifiersTab({
   );
   const [editMod, setEditMod] = useState<ModifierGroup | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
+  const [nestedSearchQueries, setNestedSearchQueries] = useState<Record<number, string>>({});
 
   // Group & sort modifiers so copies always appear directly underneath their original group
   const sortedModifiers = useMemo(() => {
@@ -107,7 +111,7 @@ export default function ModifiersTab({
     required: boolean;
     minSelection: number;
     maxSelection: number;
-    displayType: "radio" | "checkbox" | "card";
+    displayType: "radio" | "checkbox" | "card" | "counter";
     options: ModifierOption[];
   }>({
     name: "",
@@ -463,28 +467,12 @@ export default function ModifiersTab({
               className="w-full bg-[#FAFAF9] border border-neutral-200 rounded-xl px-3 py-2.5 text-[11px] focus:outline-none focus:border-brand-primary"
             />
           </div>
-          <div className="grid grid-cols-2 gap-3.5">
-            <div>
-              <label className="block text-[9px] font-700 text-neutral-400 uppercase tracking-wider mb-1.5">
-                Display UI
+          <div className="space-y-1.5">
+            <div className="flex items-center justify-between">
+              <label className="block text-[9px] font-700 text-neutral-400 uppercase tracking-wider">
+                Display UI Type
               </label>
-              <select
-                value={modForm.displayType}
-                onChange={(e) =>
-                  setModForm({
-                    ...modForm,
-                    displayType: e.target.value as any,
-                  })
-                }
-                className="w-full bg-[#FAFAF9] border border-neutral-200 rounded-xl px-2.5 py-2.5 text-[11px] focus:outline-none"
-              >
-                <option value="radio">Radio Button</option>
-                <option value="checkbox">Checkbox</option>
-                {/* <option value="card">Cards Grid</option> */}
-              </select>
-            </div>
-            <div className="flex flex-col justify-end">
-              <label className="flex items-center gap-2 text-[10px] font-600 text-neutral-700 cursor-pointer h-10 select-none">
+              <label className="flex items-center gap-1.5 text-[10.5px] font-700 text-neutral-800 cursor-pointer select-none">
                 <input
                   type="checkbox"
                   checked={modForm.required}
@@ -495,10 +483,41 @@ export default function ModifiersTab({
                       minSelection: e.target.checked ? 1 : 0,
                     })
                   }
-                  className="rounded border-neutral-300 text-brand-primary focus:ring-brand-primary"
+                  className="rounded border-neutral-300 text-brand-primary focus:ring-brand-primary w-3.5 h-3.5"
                 />
-                Is Mandatory?
+                <span>Is Mandatory?</span>
               </label>
+            </div>
+
+            <div className="grid grid-cols-3 gap-2">
+              {[
+                { id: "radio", label: "Radio", sub: "Single Choice", icon: CircleDot },
+                { id: "checkbox", label: "Checkbox", sub: "Multi Choice", icon: CheckSquare },
+                { id: "counter", label: "Counter", sub: "Quantity (-/+)", icon: Calculator },
+              ].map((type) => {
+                const Icon = type.icon;
+                const selected = modForm.displayType === type.id;
+                return (
+                  <button
+                    key={type.id}
+                    type="button"
+                    onClick={() =>
+                      setModForm({ ...modForm, displayType: type.id as any })
+                    }
+                    className={`p-2.5 rounded-xl border text-left transition-all cursor-pointer flex flex-col justify-between ${
+                      selected
+                        ? "bg-orange-50 border-brand-primary text-brand-primary font-800 shadow-xs ring-1 ring-brand-primary"
+                        : "bg-[#FAFAF9] border-neutral-200 text-neutral-600 hover:border-neutral-300 hover:bg-neutral-100"
+                    }`}
+                  >
+                    <Icon size={16} className={selected ? "text-brand-primary" : "text-neutral-400"} />
+                    <div className="mt-1.5">
+                      <p className="text-[11px] font-800 leading-tight">{type.label}</p>
+                      <p className="text-[9px] font-500 opacity-75">{type.sub}</p>
+                    </div>
+                  </button>
+                );
+              })}
             </div>
           </div>
           <div className="grid grid-cols-2 gap-3.5">
@@ -679,24 +698,53 @@ export default function ModifiersTab({
                 </div>
 
                 {expandedOptionIdx === index && (
-                  <div className="pl-11 pr-2 py-2.5 border-t border-neutral-100 bg-[#FAFAF9] rounded-lg mt-1 space-y-1.5 animate-scale-up">
-                    <p className="text-[8.5px] font-700 text-neutral-400 uppercase tracking-wider">
-                      Link Nested Modifier Groups
-                    </p>
-                    {modifiers.filter(
-                      (m) => (m.id || m._id) !== (editMod?.id || editMod?._id),
-                    ).length === 0 ? (
-                      <p className="text-[9px] text-neutral-400 italic">
-                        No other modifier groups available.
+                  <div className="pl-11 pr-2 py-2.5 border-t border-neutral-100 bg-[#FAFAF9] rounded-lg mt-1 space-y-2 animate-scale-up">
+                    <div className="flex items-center justify-between gap-2">
+                      <p className="text-[8.5px] font-700 text-neutral-400 uppercase tracking-wider">
+                        Link Nested Modifier Groups
                       </p>
-                    ) : (
-                      <div className="grid grid-cols-2 gap-1.5 max-h-36 overflow-y-auto pr-1">
-                        {modifiers
-                          .filter(
-                            (m) =>
-                              (m.id || m._id) !== (editMod?.id || editMod?._id),
-                          )
-                          .map((m) => {
+                      <div className="relative flex-1 max-w-[180px]">
+                        <Search size={10} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-neutral-400" />
+                        <input
+                          type="text"
+                          placeholder="Search groups..."
+                          value={nestedSearchQueries[index] || ""}
+                          onChange={(e) =>
+                            setNestedSearchQueries({
+                              ...nestedSearchQueries,
+                              [index]: e.target.value,
+                            })
+                          }
+                          className="w-full bg-white border border-neutral-200 rounded-lg pl-7 pr-2 py-1 text-[10px] text-neutral-800 placeholder:text-neutral-400 focus:outline-none focus:border-brand-primary"
+                        />
+                      </div>
+                    </div>
+
+                    {(() => {
+                      const q = (nestedSearchQueries[index] || "").toLowerCase().trim();
+                      const availableGroups = modifiers
+                        .filter((m) => (m.id || m._id) !== (editMod?.id || editMod?._id))
+                        .filter((m) => !q || m.name.toLowerCase().includes(q));
+
+                      if (modifiers.filter((m) => (m.id || m._id) !== (editMod?.id || editMod?._id)).length === 0) {
+                        return (
+                          <p className="text-[9px] text-neutral-400 italic">
+                            No other modifier groups available.
+                          </p>
+                        );
+                      }
+
+                      if (availableGroups.length === 0) {
+                        return (
+                          <p className="text-[9px] text-neutral-400 italic">
+                            No matching modifier groups found for "{nestedSearchQueries[index]}".
+                          </p>
+                        );
+                      }
+
+                      return (
+                        <div className="grid grid-cols-2 gap-1.5 max-h-36 overflow-y-auto pr-1">
+                          {availableGroups.map((m) => {
                             const mid = (m.id || m._id) as string;
                             const optGroups = opt.modifierGroups || [];
                             const linked = optGroups.includes(mid);
@@ -733,8 +781,9 @@ export default function ModifiersTab({
                               </button>
                             );
                           })}
-                      </div>
-                    )}
+                        </div>
+                      );
+                    })()}
                   </div>
                 )}
               </div>

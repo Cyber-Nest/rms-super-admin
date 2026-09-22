@@ -37,6 +37,7 @@ export default function ProductsTab({
   const [uploading, setUploading] = useState(false);
   const [editProd, setEditProd] = useState<Product | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
+  const [modifierSearchQuery, setModifierSearchQuery] = useState("");
   const [visibilityTarget, setVisibilityTarget] = useState<{
     id: string;
     name: string;
@@ -565,9 +566,26 @@ export default function ProductsTab({
 
             {prodForm.itemType === "combo" && (
               <div className="space-y-2.5 pt-2 border-t border-neutral-100">
-                <label className="block text-[9px] font-700 text-neutral-400 uppercase tracking-wider">
-                  Link Modifier Groups
-                </label>
+                <div className="flex items-center justify-between gap-2">
+                  <label className="block text-[9px] font-700 text-neutral-400 uppercase tracking-wider">
+                    Link Modifier Groups
+                  </label>
+                  {modifiers.length > 0 && (
+                    <div className="relative">
+                      <Search
+                        size={11}
+                        className="absolute left-2.5 top-1/2 -translate-y-1/2 text-neutral-400"
+                      />
+                      <input
+                        type="text"
+                        placeholder="Search modifier..."
+                        value={modifierSearchQuery}
+                        onChange={(e) => setModifierSearchQuery(e.target.value)}
+                        className="pl-7 pr-2.5 py-1 bg-[#FAFAF9] border border-neutral-200 rounded-lg text-[10px] text-neutral-800 placeholder:text-neutral-400 focus:outline-none focus:border-brand-primary w-32 sm:w-40 transition-all"
+                      />
+                    </div>
+                  )}
+                </div>
                 {modifiers.length === 0 ? (
                   <p className="text-[9px] text-neutral-400 italic">
                     No modifier groups created yet.
@@ -575,35 +593,47 @@ export default function ProductsTab({
                 ) : (
                   <div className="border border-neutral-200 rounded-xl bg-[#FAFAF9] overflow-hidden">
                     <div className="max-h-44 overflow-y-auto p-3">
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-1.5">
-                        {modifiers.map((g) => {
-                          const gid = (g.id || g._id) as string;
-                          const linked = prodForm.modifierGroups.includes(gid);
-                          return (
-                            <button
-                              key={gid}
-                              type="button"
-                              onClick={() => handleProductModifierToggle(gid)}
-                              className={`flex items-center gap-2 px-3 py-2 rounded-lg border text-[10.5px] font-600 transition-all text-left cursor-pointer ${
-                                linked
-                                  ? "bg-orange-50 border-brand-primary text-brand-primary font-700"
-                                  : "bg-white border-neutral-200 text-neutral-600 hover:bg-neutral-50 hover:text-neutral-800"
-                              }`}
-                            >
-                              <div
-                                className={`w-3.5 h-3.5 rounded border flex items-center justify-center flex-shrink-0 transition-all ${
-                                  linked
-                                    ? "bg-brand-primary border-brand-primary text-white"
-                                    : "border-neutral-300 bg-white"
-                                }`}
-                              >
-                                {linked && <Check size={8} strokeWidth={3} />}
-                              </div>
-                              <span className="truncate">{g.name}</span>
-                            </button>
-                          );
-                        })}
-                      </div>
+                      {modifiers.filter((g) =>
+                        g.name.toLowerCase().includes(modifierSearchQuery.toLowerCase().trim())
+                      ).length === 0 ? (
+                        <p className="text-[9.5px] text-neutral-400 italic py-2 text-center">
+                          No modifier groups match &quot;{modifierSearchQuery}&quot;
+                        </p>
+                      ) : (
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-1.5">
+                          {modifiers
+                            .filter((g) =>
+                              g.name.toLowerCase().includes(modifierSearchQuery.toLowerCase().trim())
+                            )
+                            .map((g) => {
+                              const gid = (g.id || g._id) as string;
+                              const linked = prodForm.modifierGroups.includes(gid);
+                              return (
+                                <button
+                                  key={gid}
+                                  type="button"
+                                  onClick={() => handleProductModifierToggle(gid)}
+                                  className={`flex items-center gap-2 px-3 py-2 rounded-lg border text-[10.5px] font-600 transition-all text-left cursor-pointer ${
+                                    linked
+                                      ? "bg-orange-50 border-brand-primary text-brand-primary font-700"
+                                      : "bg-white border-neutral-200 text-neutral-600 hover:bg-neutral-50 hover:text-neutral-800"
+                                  }`}
+                                >
+                                  <div
+                                    className={`w-3.5 h-3.5 rounded border flex items-center justify-center flex-shrink-0 transition-all ${
+                                      linked
+                                        ? "bg-brand-primary border-brand-primary text-white"
+                                        : "border-neutral-300 bg-white"
+                                    }`}
+                                  >
+                                    {linked && <Check size={8} strokeWidth={3} />}
+                                  </div>
+                                  <span className="truncate">{g.name}</span>
+                                </button>
+                              );
+                            })}
+                        </div>
+                      )}
                     </div>
                   </div>
                 )}
