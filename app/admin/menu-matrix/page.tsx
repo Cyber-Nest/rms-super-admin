@@ -17,6 +17,9 @@ import {
   Eye,
   EyeOff,
   Layers,
+  Edit,
+  Tag,
+  RotateCcw,
 } from "lucide-react";
 
 interface Branch {
@@ -35,6 +38,11 @@ interface Category {
   displayOrder: number;
 }
 
+interface BranchPriceOverride {
+  branchId: string;
+  price: number;
+}
+
 interface Product {
   _id?: string;
   id?: string;
@@ -44,6 +52,7 @@ interface Product {
   categoryId: any;
   kitchenLabel?: string;
   disabledBranches?: string[];
+  branchPrices?: BranchPriceOverride[];
   productId?: string;
   isActive?: boolean;
 }
@@ -58,6 +67,16 @@ export default function MenuMatrixPage() {
   const [selectedCategoryFilter, setSelectedCategoryFilter] = useState("all");
   const [collapsedCategories, setCollapsedCategories] = useState<Record<string, boolean>>({});
   const [updatingId, setUpdatingId] = useState<string | null>(null);
+
+  const [editingPriceTarget, setEditingPriceTarget] = useState<{
+    productId: string;
+    productName: string;
+    branchId: string;
+    branchName: string;
+    masterPrice: number;
+    currentCustomPrice: number | null;
+  } | null>(null);
+  const [customPriceInput, setCustomPriceInput] = useState("");
 
   const BASE_API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
   const MENU_API_URL = `${BASE_API_URL}/menu`;
@@ -167,6 +186,58 @@ export default function MenuMatrixPage() {
       }
     } catch (err: any) {
       toast.error("Failed to update product visibility: " + (err.response?.data?.message || err.message));
+    } finally {
+      setUpdatingId(null);
+    }
+  };
+
+  const handleSaveBranchPriceWithVal = async (valStr: string) => {
+    if (!editingPriceTarget) return;
+    const { productId, branchId } = editingPriceTarget;
+    const key = `price-${productId}-${branchId}`;
+    setUpdatingId(key);
+
+    try {
+      const val = valStr.trim();
+      const customPrice = val === "" ? null : parseFloat(val);
+
+      if (customPrice !== null && (isNaN(customPrice) || customPrice < 0)) {
+        toast.error("Please enter a valid positive price");
+        setUpdatingId(null);
+        return;
+      }
+
+      const res = await axios.patch(
+        `${MENU_API_URL}/products/${productId}/branch-price`,
+        { branchId, customPrice },
+        getAuthConfig()
+      );
+
+      if (res.data.success) {
+        toast.success(
+          customPrice !== null
+            ? `Custom price $${customPrice.toFixed(2)} set for ${editingPriceTarget.branchName}!`
+            : `Reset to master price ($${editingPriceTarget.masterPrice.toFixed(2)})!`
+        );
+
+        setProducts((prev) =>
+          prev.map((p) => {
+            const id = p._id || p.id;
+            if (id === productId) {
+              const curPrices = p.branchPrices || [];
+              const updated = curPrices.filter((b) => b.branchId !== branchId);
+              if (customPrice !== null) {
+                updated.push({ branchId, price: customPrice });
+              }
+              return { ...p, branchPrices: updated };
+            }
+            return p;
+          })
+        );
+        setEditingPriceTarget(null);
+      }
+    } catch (err: any) {
+      toast.error("Failed to update price override: " + (err.response?.data?.message || err.message));
     } finally {
       setUpdatingId(null);
     }
@@ -435,36 +506,71 @@ export default function MenuMatrixPage() {
                                 </div>
                               </td>
 
-                              {/* Product Branch Toggle Switches */}
+                              {/* Product Branch Toggle & Custom Price Badge */}
                               {displayedBranches.map((branch) => {
                                 const isProdHidden = prodDisabled.includes(branch._id);
                                 const isCatHidden = catDisabled.includes(branch._id);
                                 const isEffectiveHidden = isProdHidden || isCatHidden;
                                 const updateKey = `prod-${prodId}-${branch._id}`;
-                                const isUpdating = updatingId === updateKey;
+                                const priceKey = `price-${prodId}-${branch._id}`;
+                                const isUpdating = updatingId === updateKey || updatingId === priceKey;
+
+                                const override = prod.branchPrices?.find((bp) => bp.branchId === branch._id);
+                                const effectivePrice = override ? override.price : prod.price;
+                                const isCustomPrice = !!override;
 
                                 return (
-                                  <td key={branch._id} className="py-2.5 px-4 text-center border-r border-neutral-100 last:border-r-0">
-                                    <button
-                                      onClick={() => handleToggleProductBranch(prodId, branch._id, isProdHidden)}
-                                      disabled={isUpdating}
-                                      className={`relative inline-flex h-5 w-10 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
-                                        isEffectiveHidden ? "bg-red-400" : "bg-emerald-500"
-                                      }`}
-                                      title={
-                                        isCatHidden
-                                          ? "Hidden because Category is Hidden for this branch"
-                                          : isProdHidden
-                                          ? "Product is Hidden for this branch"
-                                          : "Product is Visible for this branch"
-                                      }
-                                    >
-                                      <span
-                                        className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
-                                          isEffectiveHidden ? "translate-x-0" : "translate-x-5"
+                                  <td key={branch._id} className="py-2.5 px-3 text-center border-r border-neutral-100 last:border-r-0">
+                                    <div className="flex flex-col items-center justify-center gap-1.5">
+                                      <button
+                                        onClick={() => handleToggleProductBranch(prodId, branch._id, isProdHidden)}
+                                        disabled={isUpdating}
+                                        className={`relative inline-flex h-4.5 w-9 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+                                          isEffectiveHidden ? "bg-red-400" : "bg-emerald-500"
                                         }`}
-                                      />
-                                    </button>
+                                        title={
+                                          isCatHidden
+                                            ? "Hidden because Category is Hidden for this branch"
+                                            : isProdHidden
+                                            ? "Product is Hidden for this branch"
+                                            : "Product is Visible for this branch"
+                                        }
+                                      >
+                                        <span
+                                          className={`pointer-events-none inline-block h-3.5 w-3.5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
+                                            isEffectiveHidden ? "translate-x-0" : "translate-x-4.5"
+                                          }`}
+                                        />
+                                      </button>
+
+                                      <button
+                                        type="button"
+                                        onClick={() => {
+                                          setEditingPriceTarget({
+                                            productId: prodId,
+                                            productName: prod.name,
+                                            branchId: branch._id,
+                                            branchName: getShortBranchName(branch.name),
+                                            masterPrice: prod.price,
+                                            currentCustomPrice: override ? override.price : null,
+                                          });
+                                          setCustomPriceInput(override ? String(override.price) : "");
+                                        }}
+                                        className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9.5px] font-800 transition-all cursor-pointer border ${
+                                          isCustomPrice
+                                            ? "bg-amber-500 text-white border-amber-600 shadow-xs"
+                                            : "bg-neutral-100 hover:bg-neutral-200 text-neutral-600 border-neutral-200"
+                                        }`}
+                                        title={
+                                          isCustomPrice
+                                            ? `Custom Branch Price: $${effectivePrice.toFixed(2)} (Master: $${prod.price.toFixed(2)})`
+                                            : `Master Price: $${prod.price.toFixed(2)} (Click to override for ${getShortBranchName(branch.name)})`
+                                        }
+                                      >
+                                        <span>${effectivePrice.toFixed(2)}</span>
+                                        <Edit size={8} className={isCustomPrice ? "text-amber-100" : "text-neutral-400"} />
+                                      </button>
+                                    </div>
                                   </td>
                                 );
                               })}
@@ -476,6 +582,90 @@ export default function MenuMatrixPage() {
                 })}
               </tbody>
             </table>
+          </div>
+        </div>
+      )}
+
+      {/* Custom Branch Price Override Modal */}
+      {editingPriceTarget && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs animate-fade-in">
+          <div className="bg-white rounded-2xl p-5 w-full max-w-sm border border-neutral-200 shadow-2xl space-y-4">
+            <div className="flex items-center justify-between pb-2.5 border-b border-neutral-100">
+              <div className="flex items-center gap-2">
+                <div className="w-7 h-7 rounded-lg bg-amber-50 border border-amber-100 flex items-center justify-center text-amber-600">
+                  <Tag size={14} />
+                </div>
+                <div>
+                  <h3 className="text-xs font-800 text-neutral-900">Branch Price Override</h3>
+                  <p className="text-[10px] font-600 text-neutral-400">
+                    {editingPriceTarget.branchName} Branch
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setEditingPriceTarget(null)}
+                className="w-6 h-6 rounded-lg bg-neutral-100 hover:bg-neutral-200 text-neutral-500 flex items-center justify-center cursor-pointer transition-all"
+              >
+                <X size={13} />
+              </button>
+            </div>
+
+            <div className="space-y-3">
+              <div className="p-2.5 bg-neutral-50 rounded-xl border border-neutral-200/60 flex items-center justify-between text-xs">
+                <div>
+                  <span className="block font-700 text-neutral-800">{editingPriceTarget.productName}</span>
+                  <span className="block text-[10px] text-neutral-400">Master Base Price</span>
+                </div>
+                <span className="font-800 text-brand-primary text-sm">
+                  ${editingPriceTarget.masterPrice.toFixed(2)}
+                </span>
+              </div>
+
+              <div>
+                <label className="block text-[9.5px] font-700 text-neutral-500 uppercase tracking-wider mb-1">
+                  Custom Branch Price ($)
+                </label>
+                <div className="relative">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 font-700 text-neutral-400 text-xs">$</span>
+                  <input
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    placeholder={`e.g. ${editingPriceTarget.masterPrice.toFixed(2)}`}
+                    value={customPriceInput}
+                    onChange={(e) => setCustomPriceInput(e.target.value)}
+                    className="w-full pl-7 pr-3 py-2.5 bg-white border border-neutral-200 rounded-xl text-xs font-700 text-neutral-800 focus:outline-none focus:border-brand-primary focus:ring-2 focus:ring-brand-primary/10"
+                    autoFocus
+                  />
+                </div>
+                <p className="text-[8.5px] text-neutral-400 mt-1 leading-normal">
+                  Leave empty or click &quot;Reset&quot; to restore the master base price (${editingPriceTarget.masterPrice.toFixed(2)}).
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2 pt-1">
+              {editingPriceTarget.currentCustomPrice !== null && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setCustomPriceInput("");
+                    handleSaveBranchPriceWithVal("");
+                  }}
+                  className="flex-1 py-2.5 bg-neutral-100 hover:bg-neutral-200 text-neutral-700 rounded-xl text-[10px] font-700 uppercase tracking-wider transition-all cursor-pointer flex items-center justify-center gap-1"
+                >
+                  <RotateCcw size={11} /> Reset
+                </button>
+              )}
+              <button
+                type="button"
+                onClick={() => handleSaveBranchPriceWithVal(customPriceInput)}
+                disabled={updatingId !== null}
+                className="flex-2 py-2.5 bg-brand-primary hover:bg-brand-primary-hover text-white rounded-xl text-[10px] font-700 uppercase tracking-wider transition-all cursor-pointer shadow-md shadow-brand-primary/20 flex items-center justify-center gap-1 disabled:opacity-50"
+              >
+                {updatingId !== null ? <RefreshCw size={11} className="animate-spin" /> : "Save Price"}
+              </button>
+            </div>
           </div>
         </div>
       )}
