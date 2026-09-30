@@ -19,6 +19,7 @@ import {
   ExternalLink,
   Loader2,
   Tag,
+  TrendingUp,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
@@ -246,6 +247,7 @@ export default function AdminLayout({ children }: Props) {
     { name: "Promo Codes", href: "/admin/promo-codes", icon: Tag, desc: "Manage discount codes & promotions" },
     { name: "Orders", href: "/admin/orders", icon: ClipboardList, desc: "Live restaurant order management" },
     { name: "Branches", href: "/admin/branches", icon: Store, desc: "Manage multi-unit branch locations" },
+    { name: "Royalty & Ads", href: "/admin/royalty", icon: TrendingUp, desc: "Track royalty & advertisement dues per branch" },
     { name: "Settings", href: "/admin/settings", icon: Settings, desc: "System configuration & preferences" },
   ];
 
