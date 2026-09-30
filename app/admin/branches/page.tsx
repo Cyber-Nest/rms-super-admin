@@ -37,6 +37,9 @@ interface Branch {
   isLive: boolean;
   isLocationConfigured?: boolean;
   createdAt: string;
+  royaltyRate?: number;
+  advertisementType?: "percentage" | "fixed";
+  advertisementRate?: number;
 }
 
 export default function BranchesPage() {
@@ -48,7 +51,19 @@ export default function BranchesPage() {
 
   // Note: Lat and Lng inputs removed from Super Admin form.
   // Coordinates are set by the restaurant manager in POS Settings.
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<{
+    name: string;
+    code: string;
+    address: string;
+    city: string;
+    phone: string;
+    email: string;
+    password: string;
+    isActive: boolean;
+    royaltyRate: number;
+    advertisementType: "percentage" | "fixed";
+    advertisementRate: number;
+  }>({
     name: "",
     code: "",
     address: "",
@@ -57,6 +72,9 @@ export default function BranchesPage() {
     email: "",
     password: "",
     isActive: true,
+    royaltyRate: 0,
+    advertisementType: "percentage",
+    advertisementRate: 0,
   });
 
   const [showPassword, setShowPassword] = useState(false);
@@ -107,6 +125,9 @@ export default function BranchesPage() {
         email: branch.email,
         password: branch.password || "",
         isActive: branch.isActive,
+        royaltyRate: branch.royaltyRate ?? 0,
+        advertisementType: branch.advertisementType ?? "percentage",
+        advertisementRate: branch.advertisementRate ?? 0,
       });
     } else {
       setEditingBranch(null);
@@ -119,6 +140,9 @@ export default function BranchesPage() {
         email: "",
         password: "",
         isActive: true,
+        royaltyRate: 0,
+        advertisementType: "percentage",
+        advertisementRate: 0,
       });
     }
     setIsModalOpen(true);
@@ -132,9 +156,11 @@ export default function BranchesPage() {
 
     try {
       if (editingBranch) {
+        // Exclude password when editing — password changes use the dedicated endpoint
+        const { password: _pw, ...editPayload } = formData;
         const res = await axios.patch(
           `${API_URL}/branches/${editingBranch._id}`,
-          formData,
+          editPayload,
           getAuthConfig()
         );
         if (res.data.success) {
@@ -627,6 +653,87 @@ export default function BranchesPage() {
               {/* Location Setup Note */}
               <div className="p-3 bg-blue-50 border border-blue-100 rounded-xl text-[11px] text-blue-700 font-500">
                 ℹ️ <strong>Location Note:</strong> Restaurant GPS coordinates will be captured directly by the branch manager in the POS Settings tab before Super Admin can take this branch <strong>Live</strong>.
+              </div>
+
+              {/* Royalty & Advertisement Rates Section */}
+              <div className="p-4 bg-orange-50/50 border border-orange-100 rounded-xl space-y-3">
+                <span className="text-[11px] font-800 uppercase tracking-wider text-brand-primary block">
+                  Royalty &amp; Advertisement Rates
+                </span>
+
+                {/* Royalty Rate */}
+                <div>
+                  <label className="block text-[10px] font-700 text-neutral-700 mb-1">
+                    Royalty Rate (%)
+                  </label>
+                  <div className="relative">
+                    <input
+                      type="number"
+                      min="0"
+                      max="100"
+                      step="0.01"
+                      placeholder="e.g. 5"
+                      value={formData.royaltyRate}
+                      onChange={(e) => setFormData({ ...formData, royaltyRate: parseFloat(e.target.value) || 0 })}
+                      className="w-full px-3 py-2 bg-white border border-neutral-200 rounded-xl text-xs focus:outline-none focus:border-brand-primary pr-8"
+                    />
+                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-700 text-neutral-400">%</span>
+                  </div>
+                </div>
+
+                {/* Advertisement */}
+                <div>
+                  <label className="block text-[10px] font-700 text-neutral-700 mb-1">
+                    Advertisement
+                  </label>
+                  <div className="flex gap-2">
+                    {/* Type Toggle */}
+                    <div className="flex rounded-xl border border-neutral-200 bg-white overflow-hidden flex-shrink-0">
+                      <button
+                        type="button"
+                        onClick={() => setFormData({ ...formData, advertisementType: "percentage" })}
+                        className={`px-3 py-2 text-[10px] font-700 transition-all cursor-pointer ${
+                          formData.advertisementType === "percentage"
+                            ? "bg-brand-primary text-white"
+                            : "text-neutral-500 hover:bg-neutral-50"
+                        }`}
+                      >
+                        % Rate
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setFormData({ ...formData, advertisementType: "fixed" })}
+                        className={`px-3 py-2 text-[10px] font-700 transition-all cursor-pointer ${
+                          formData.advertisementType === "fixed"
+                            ? "bg-brand-primary text-white"
+                            : "text-neutral-500 hover:bg-neutral-50"
+                        }`}
+                      >
+                        Fixed $
+                      </button>
+                    </div>
+                    {/* Rate Input */}
+                    <div className="relative flex-1">
+                      <input
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        placeholder={formData.advertisementType === "percentage" ? "e.g. 2" : "e.g. 200"}
+                        value={formData.advertisementRate}
+                        onChange={(e) => setFormData({ ...formData, advertisementRate: parseFloat(e.target.value) || 0 })}
+                        className="w-full px-3 py-2 bg-white border border-neutral-200 rounded-xl text-xs focus:outline-none focus:border-brand-primary pr-8"
+                      />
+                      <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-700 text-neutral-400">
+                        {formData.advertisementType === "percentage" ? "%" : "$"}
+                      </span>
+                    </div>
+                  </div>
+                  <p className="text-[9px] text-neutral-400 mt-1 font-500">
+                    {formData.advertisementType === "percentage"
+                      ? "Percentage of total sales per period"
+                      : "Fixed flat amount per period regardless of sales"}
+                  </p>
+                </div>
               </div>
 
               {/* Active Toggle */}
