@@ -25,6 +25,8 @@ import {
   Building2,
   Target,
   Info,
+  Pencil,
+  Plus,
 } from "lucide-react";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
@@ -39,6 +41,11 @@ interface RoyaltyRecord {
   startDate: string;
   endDate: string;
   totalSales: number;
+  subtotal?: number;
+  discount?: number;
+  netTotal?: number;
+  tax?: number;
+  includeTax?: boolean;
   totalOrders: number;
   royaltyRate: number;
   royaltyAmount: number;
@@ -213,6 +220,7 @@ export default function RoyaltyPage() {
   const [genCustomEnd, setGenCustomEnd] = useState("");
   const [genBranchMode, setGenBranchMode] = useState<"all" | "specific">("all");
   const [genSelectedBranches, setGenSelectedBranches] = useState<string[]>([]);
+  const [genIncludeTax, setGenIncludeTax] = useState(false);
   const [generating, setGenerating] = useState(false);
 
   // Mark Paid modal
@@ -329,7 +337,13 @@ export default function RoyaltyPage() {
     try {
       const res = await axios.post(
         `${API_URL}/royalty/generate`,
-        { periodType: genPeriodType, periodStart, periodEnd, branchIds },
+        {
+          periodType: genPeriodType,
+          periodStart,
+          periodEnd,
+          branchIds,
+          includeTax: genIncludeTax,
+        },
         getAuthConfig(),
       );
       if (res.data.success) {
@@ -852,23 +866,27 @@ export default function RoyaltyPage() {
                           <button
                             onClick={() => {
                               setPaidModal({ record: rec });
-                              setPaidDate(
-                                new Date().toISOString().slice(0, 10),
-                              );
+                              setPaidDate(toLocalDateStr(new Date()));
                               setPaidNote("");
                             }}
-                            title="Mark as paid"
-                            className="flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-700 bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100 transition-all cursor-pointer"
+                            title="Add Payment"
+                            className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-700 bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100 hover:border-emerald-300 transition-all cursor-pointer shadow-xs"
                           >
-                            <CheckCircle2 size={10} /> Paid
+                            <Plus size={11} /> Add Payment
                           </button>
                         ) : (
                           <button
-                            onClick={() => handleMarkUnpaid(rec)}
-                            title="Mark as unpaid"
-                            className="flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-700 bg-amber-50 text-amber-700 border border-amber-200 hover:bg-amber-100 transition-all cursor-pointer"
+                            onClick={() => {
+                              setPaidModal({ record: rec });
+                              setPaidDate(
+                                rec.paidAt ? rec.paidAt.slice(0, 10) : toLocalDateStr(new Date())
+                              );
+                              setPaidNote(rec.paidNote || "");
+                            }}
+                            title="Edit Payment"
+                            className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-700 bg-neutral-100 text-neutral-700 border border-neutral-200 hover:bg-neutral-200 hover:text-neutral-900 transition-all cursor-pointer shadow-xs"
                           >
-                            <Clock size={10} /> Unpaid
+                            <Pencil size={11} /> Edit
                           </button>
                         )}
 
@@ -1067,6 +1085,27 @@ export default function RoyaltyPage() {
                 )}
               </div>
 
+              {/* Include Tax Option */}
+              <div className="p-3 bg-neutral-50 border border-neutral-200 rounded-xl flex items-center justify-between">
+                <div>
+                  <span className="text-xs font-700 text-neutral-800 block">Include Tax in Sales Base</span>
+                  {/* <span className="text-[10px] text-neutral-500 font-500 block mt-0.5">
+                    {genIncludeTax
+                      ? "Royalty calculated on Net Total + Tax"
+                      : "Royalty calculated on Net Total (Subtotal - Discount)"}
+                  </span> */}
+                </div>
+                <label className="relative inline-flex items-center cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={genIncludeTax}
+                    onChange={(e) => setGenIncludeTax(e.target.checked)}
+                    className="sr-only peer"
+                  />
+                  <div className="w-9 h-5 bg-neutral-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-neutral-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-brand-primary"></div>
+                </label>
+              </div>
+
               {/* Info note */}
               <div className="p-3 bg-blue-50 border border-blue-100 rounded-xl text-[11px] text-blue-700 font-500 flex items-center gap-2">
                 <Info size={14} className="shrink-0 text-blue-600" />
@@ -1111,8 +1150,17 @@ export default function RoyaltyPage() {
           <div className="bg-white rounded-2xl border border-neutral-200 shadow-2xl w-full max-w-md overflow-hidden animate-scale-up">
             <div className="px-6 py-4 border-b border-neutral-200 flex items-center justify-between bg-neutral-50">
               <h2 className="text-sm font-800 text-neutral-900 flex items-center gap-2">
-                <CheckCircle2 size={16} className="text-emerald-600" />
-                Mark as Paid
+                {paidModal.record.status === "paid" ? (
+                  <>
+                    <Pencil size={16} className="text-brand-primary" />
+                    Edit Royalty Payment
+                  </>
+                ) : (
+                  <>
+                    <DollarSign size={16} className="text-emerald-600" />
+                    Add Royalty Payment
+                  </>
+                )}
               </h2>
               <button
                 onClick={() => setPaidModal(null)}
@@ -1164,7 +1212,7 @@ export default function RoyaltyPage() {
                 </label>
                 <input
                   type="text"
-                  placeholder="e.g. Cash received at office"
+                  placeholder="e.g. Cash received at office, Check #104"
                   value={paidNote}
                   onChange={(e) => setPaidNote(e.target.value)}
                   className="w-full px-3 py-2 border border-neutral-200 rounded-xl text-xs focus:outline-none focus:border-brand-primary"
@@ -1172,28 +1220,41 @@ export default function RoyaltyPage() {
               </div>
             </div>
 
-            <div className="px-6 pb-5 pt-3 border-t border-neutral-100 flex items-center justify-end gap-3">
-              <button
-                onClick={() => setPaidModal(null)}
-                className="px-4 py-2 border border-neutral-200 text-neutral-700 text-xs font-700 rounded-xl hover:bg-neutral-50 transition-all cursor-pointer"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleMarkPaid}
-                disabled={markingPaid || !paidDate}
-                className="px-5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-700 rounded-xl transition-all shadow-md shadow-emerald-600/20 flex items-center gap-2 disabled:opacity-50 cursor-pointer"
-              >
-                {markingPaid ? (
-                  <>
-                    <Loader2 size={13} className="animate-spin" /> Saving...
-                  </>
-                ) : (
-                  <>
-                    <CheckCircle2 size={13} /> Confirm Payment
-                  </>
+            <div className="px-6 pb-5 pt-3 border-t border-neutral-100 flex items-center justify-between gap-3">
+              <div>
+                {paidModal.record.status === "paid" && (
+                  <button
+                    onClick={() => handleMarkUnpaid(paidModal.record)}
+                    className="px-3 py-2 bg-amber-50 text-amber-700 border border-amber-200 hover:bg-amber-100 text-xs font-700 rounded-xl transition-all flex items-center gap-1.5 cursor-pointer"
+                  >
+                    <Clock size={13} /> Revert to Unpaid
+                  </button>
                 )}
-              </button>
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setPaidModal(null)}
+                  className="px-4 py-2 border border-neutral-200 text-neutral-700 text-xs font-700 rounded-xl hover:bg-neutral-50 transition-all cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleMarkPaid}
+                  disabled={markingPaid || !paidDate}
+                  className="px-5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-700 rounded-xl transition-all shadow-md shadow-emerald-600/20 flex items-center gap-2 disabled:opacity-50 cursor-pointer"
+                >
+                  {markingPaid ? (
+                    <>
+                      <Loader2 size={13} className="animate-spin" /> Saving...
+                    </>
+                  ) : (
+                    <>
+                      <CheckCircle2 size={13} />{" "}
+                      {paidModal.record.status === "paid" ? "Save Changes" : "Confirm Payment"}
+                    </>
+                  )}
+                </button>
+              </div>
             </div>
           </div>
         </div>

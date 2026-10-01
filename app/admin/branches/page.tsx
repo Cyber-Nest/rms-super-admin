@@ -681,57 +681,34 @@ export default function BranchesPage() {
                   </div>
                 </div>
 
-                {/* Advertisement */}
+                {/* Advertisement Rate */}
                 <div>
                   <label className="block text-[10px] font-700 text-neutral-700 mb-1">
-                    Advertisement
+                    Advertisement Rate (%)
                   </label>
-                  <div className="flex gap-2">
-                    {/* Type Toggle */}
-                    <div className="flex rounded-xl border border-neutral-200 bg-white overflow-hidden flex-shrink-0">
-                      <button
-                        type="button"
-                        onClick={() => setFormData({ ...formData, advertisementType: "percentage" })}
-                        className={`px-3 py-2 text-[10px] font-700 transition-all cursor-pointer ${
-                          formData.advertisementType === "percentage"
-                            ? "bg-brand-primary text-white"
-                            : "text-neutral-500 hover:bg-neutral-50"
-                        }`}
-                      >
-                        % Rate
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setFormData({ ...formData, advertisementType: "fixed" })}
-                        className={`px-3 py-2 text-[10px] font-700 transition-all cursor-pointer ${
-                          formData.advertisementType === "fixed"
-                            ? "bg-brand-primary text-white"
-                            : "text-neutral-500 hover:bg-neutral-50"
-                        }`}
-                      >
-                        Fixed $
-                      </button>
-                    </div>
-                    {/* Rate Input */}
-                    <div className="relative flex-1">
-                      <input
-                        type="number"
-                        min="0"
-                        step="0.01"
-                        placeholder={formData.advertisementType === "percentage" ? "e.g. 2" : "e.g. 200"}
-                        value={formData.advertisementRate}
-                        onChange={(e) => setFormData({ ...formData, advertisementRate: parseFloat(e.target.value) || 0 })}
-                        className="w-full px-3 py-2 bg-white border border-neutral-200 rounded-xl text-xs focus:outline-none focus:border-brand-primary pr-8"
-                      />
-                      <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-700 text-neutral-400">
-                        {formData.advertisementType === "percentage" ? "%" : "$"}
-                      </span>
-                    </div>
+                  <div className="relative">
+                    <input
+                      type="number"
+                      min="0"
+                      max="100"
+                      step="0.01"
+                      placeholder="e.g. 2"
+                      value={formData.advertisementRate}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          advertisementType: "percentage",
+                          advertisementRate: parseFloat(e.target.value) || 0,
+                        })
+                      }
+                      className="w-full px-3 py-2 bg-white border border-neutral-200 rounded-xl text-xs focus:outline-none focus:border-brand-primary pr-8"
+                    />
+                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-700 text-neutral-400">
+                      %
+                    </span>
                   </div>
                   <p className="text-[9px] text-neutral-400 mt-1 font-500">
-                    {formData.advertisementType === "percentage"
-                      ? "Percentage of total sales per period"
-                      : "Fixed flat amount per period regardless of sales"}
+                    Percentage of total sales per period
                   </p>
                 </div>
               </div>
