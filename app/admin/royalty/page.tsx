@@ -474,35 +474,31 @@ export default function RoyaltyPage() {
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {[
           {
-            label: "Total Sales",
+            label: "Total Net Sales",
             value: fmt(stats?.totalSales || 0),
             icon: ShoppingBag,
             iconBg: "bg-blue-50 border-blue-100 text-blue-600",
             valColor: "text-neutral-900",
-            sub: `${stats?.totalRecords || 0} records`,
+            sub: `${stats?.totalRecords || 0} total records`,
           },
           {
-            label: "Total Royalty Due",
-            value: fmt(stats?.totalRoyaltyDue || 0),
+            label: "Total Dues (Royalty + Ads)",
+            value: fmt(stats?.totalDue || 0),
             icon: BadgePercent,
             iconBg: "bg-orange-50 border-orange-100 text-brand-primary",
             valColor: "text-brand-primary",
-            sub: records.length > 0
-              ? [...new Set(records.map((r) => r.periodLabel))].join(" · ")
-              : "All periods",
+            sub: `Royalty: ${fmt(stats?.totalRoyaltyDue || 0)} · Ads: ${fmt(stats?.totalAdsDue || 0)}`,
           },
           {
-            label: "Advertisement Due",
-            value: fmt(stats?.totalAdsDue || 0),
-            icon: Megaphone,
-            iconBg: "bg-orange-50 border-orange-100 text-brand-primary",
-            valColor: "text-brand-primary",
-            sub: records.length > 0
-              ? [...new Set(records.map((r) => r.periodLabel))].join(" · ")
-              : "All periods",
+            label: "Collected (Paid)",
+            value: fmt(stats?.totalCollected || 0),
+            icon: CheckCircle2,
+            iconBg: "bg-emerald-50 border-emerald-100 text-emerald-600",
+            valColor: "text-emerald-600",
+            sub: `${stats?.paidCount || 0} paid records`,
           },
           {
-            label: "Pending Collection",
+            label: "Pending (Unpaid)",
             value: fmt(stats?.totalPending || 0),
             icon: Clock,
             iconBg: "bg-amber-50 border-amber-100 text-amber-600",
@@ -540,43 +536,6 @@ export default function RoyaltyPage() {
           );
         })}
       </div>
-
-      {/* ── Collected vs Pending Summary Bar ── */}
-      {stats && stats.totalRecords > 0 && (
-        <div className="bg-white rounded-2xl border border-neutral-200 shadow-sm p-4 flex flex-wrap items-center gap-5">
-          <div className="flex items-center gap-2">
-            <CheckCircle2 size={14} className="text-emerald-600" />
-            <span className="text-xs font-700 text-neutral-700">
-              Collected:{" "}
-              <span className="text-emerald-600">
-                {fmt(stats.totalCollected)}
-              </span>
-              <span className="text-neutral-400 font-500 ml-1">
-                ({stats.paidCount} paid)
-              </span>
-            </span>
-          </div>
-          <span className="w-px h-4 bg-neutral-200" />
-          <div className="flex items-center gap-2">
-            <Clock size={14} className="text-amber-500" />
-            <span className="text-xs font-700 text-neutral-700">
-              Pending:{" "}
-              <span className="text-amber-600">{fmt(stats.totalPending)}</span>
-              <span className="text-neutral-400 font-500 ml-1">
-                ({stats.unpaidCount} unpaid)
-              </span>
-            </span>
-          </div>
-          <span className="w-px h-4 bg-neutral-200" />
-          <div className="flex items-center gap-2">
-            <DollarSign size={14} className="text-brand-primary" />
-            <span className="text-xs font-700 text-neutral-700">
-              Total Due:{" "}
-              <span className="text-brand-primary">{fmt(stats.totalDue)}</span>
-            </span>
-          </div>
-        </div>
-      )}
 
       {/* ── Filters ── */}
       <div className="bg-white rounded-2xl border border-neutral-200 shadow-sm p-4">
@@ -1107,10 +1066,13 @@ export default function RoyaltyPage() {
               </div>
 
               {/* Info note */}
-              <div className="p-3 bg-blue-50 border border-blue-100 rounded-xl text-[11px] text-blue-700 font-500 flex items-center gap-2">
-                <Info size={14} className="shrink-0 text-blue-600" />
+              <div className="p-3 bg-blue-50 border border-blue-100 rounded-xl text-[11px] text-blue-700 font-500 flex items-start gap-2">
+                <Info size={14} className="shrink-0 text-blue-600 mt-0.5" />
                 <span>
-                  <strong>Note:</strong> Records already generated for this period will be automatically skipped.
+                  <strong>Smart Protection Note:</strong>{" "}
+                  {genPeriodType === "custom"
+                    ? "Custom date ranges covering multiple months are automatically broken down into monthly chunks. Months that are already generated or paid will be safely skipped."
+                    : "Records or periods already generated for this month will be automatically skipped to prevent duplicate billing."}
                 </span>
               </div>
             </div>
