@@ -177,8 +177,8 @@ export default function ProductsTab({
 
   const handleProductSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!prodForm.name || !prodForm.categoryId || prodForm.price <= 0) {
-      showToast("Name, Category, and positive price are required", "error");
+    if (!prodForm.name || !prodForm.categoryId || typeof prodForm.price !== "number" || prodForm.price < 0) {
+      showToast("Name, Category, and non-negative price are required", "error");
       return;
     }
     setLoading(true);
@@ -275,9 +275,8 @@ export default function ProductsTab({
     uploading ||
     !prodForm.name.trim() ||
     !prodForm.categoryId ||
-    prodForm.price <= 0 ||
-    !prodForm.description.trim() ||
-    !prodForm.image.trim();
+    typeof prodForm.price !== "number" ||
+    prodForm.price < 0;
 
   const sortedProducts = React.useMemo(() => {
     let list = products;
@@ -372,12 +371,12 @@ export default function ProductsTab({
                   type="number"
                   step="0.01"
                   min="0"
-                  placeholder="9.99"
-                  value={prodForm.price || ""}
+                  placeholder="0.00"
+                  value={prodForm.price !== undefined && prodForm.price !== null ? prodForm.price : ""}
                   onChange={(e) =>
                     setProdForm({
                       ...prodForm,
-                      price: parseFloat(e.target.value) || 0,
+                      price: e.target.value === "" ? 0 : parseFloat(e.target.value) || 0,
                     })
                   }
                   className="w-full bg-[#FAFAF9] border border-neutral-200 rounded-xl px-3 py-2.5 text-[11px] focus:outline-none"
